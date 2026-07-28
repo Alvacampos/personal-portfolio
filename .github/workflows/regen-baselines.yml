@@ -58,7 +58,7 @@ jobs:
       # Pin to .nvmrc so this job matches the local dev environment and
       # the e2e-tests CI job — avoids esbuild ETXTBSY postinstall race
       # on parallel npm extraction under newer Node.
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version-file: '.nvmrc'
           cache: 'npm'
