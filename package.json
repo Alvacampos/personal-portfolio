@@ -58,7 +58,7 @@
     "@playwright/test": "^1.62.1",
     "@react-router/dev": "^8.3.0",
     "@react-router/fs-routes": "^8.3.0",
-    "@size-limit/preset-app": "^12.1.0",
+    "@size-limit/preset-app": "^13.0.3",
     "@storybook/addon-a11y": "^10.5.5",
     "@storybook/addon-docs": "^10.5.5",
     "@storybook/react-vite": "^10.5.5",
