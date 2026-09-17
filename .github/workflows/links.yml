@@ -38,8 +38,13 @@ jobs:
         with:
           # Config file at .lycheerc.toml controls what's scanned and
           # what gets excluded (localhost, feature-flag prod URLs, etc.).
+          # --root-dir resolves root-relative local links (e.g. CSS
+          # `url(/fonts/...)`) against public/, the actual static-asset
+          # root — without it lychee can't verify those and errors on
+          # every one instead of catching real typos.
           args: >-
             --config .lycheerc.toml
+            --root-dir ${{ github.workspace }}/public
             --no-progress
             .
           fail: false
