@@ -157,7 +157,7 @@ jobs:
     # font rendering vs the jammy (22.04) image baselines were captured in;
     # without this container, the visual specs flake on ~0.3% pixel diffs.
     container:
-      image: mcr.microsoft.com/playwright:v1.61.0-jammy
+      image: mcr.microsoft.com/playwright:v1.63.0-jammy
       options: --ipc=host
     steps:
       - uses: actions/checkout@v7
