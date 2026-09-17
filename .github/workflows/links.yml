@@ -53,13 +53,33 @@ jobs:
           format: markdown
           output: lychee-report.md
 
+      - name: Find existing tracking issue
+        # peter-evans/create-issue-from-file always creates a new issue
+        # unless told which one to update via `issue-number` — it doesn't
+        # dedupe by title on its own. Look up any already-open issue with
+        # our well-known title so the next step updates it in place
+        # instead of piling up a new issue every month.
+        if: steps.lychee.outputs.exit_code != '0'
+        id: existing-issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          number=$(gh issue list \
+            --repo "${{ github.repository }}" \
+            --state open \
+            --search 'in:title "Broken links found by monthly lychee scan"' \
+            --json number \
+            --jq '.[0].number // empty')
+          echo "number=$number" >> "$GITHUB_OUTPUT"
+
       - name: Create issue on breakage
         # Only opens/updates an issue if lychee actually reported errors.
         # Reuses a well-known issue title so we don't churn out a new
-        # issue every month.
+        # issue every month — see "Find existing tracking issue" above.
         if: steps.lychee.outputs.exit_code != '0'
         uses: peter-evans/create-issue-from-file@v6
         with:
+          issue-number: ${{ steps.existing-issue.outputs.number }}
           title: 'Broken links found by monthly lychee scan'
           content-filepath: ./lychee-report.md
           labels: |
