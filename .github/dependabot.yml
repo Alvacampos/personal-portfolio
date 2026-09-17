@@ -60,15 +60,6 @@ updates:
         update-types: ["version-update:semver-major"]
       - dependency-name: "@eslint/js"
         update-types: ["version-update:semver-major"]
-      # @cloudflare/workers-types v5 dropped the dated compatibility
-      # subpaths (`/2023-07-01`, `/latest`, ...) — the only entrypoint
-      # left is the main index. Our tsconfig.json still imports
-      # `@cloudflare/workers-types/2023-07-01`. Also blocked by
-      # wrangler@4's peer on `^4.x`; wrangler needs a matching release
-      # before v5 can land. Revisit when wrangler ships v4-that-accepts-5
-      # (or a new major with a widened peer).
-      - dependency-name: "@cloudflare/workers-types"
-        update-types: ["version-update:semver-major"]
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
