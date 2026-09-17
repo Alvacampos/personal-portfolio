@@ -10,6 +10,26 @@
   },
   "PROJECTS": [
     {
+      "slug": "halomd",
+      "title": "HaloMD — VOB Platform",
+      "title_es": "HaloMD — Plataforma VOB",
+      "summary": "Full-stack platform for a US healthtech company running No Surprises Act arbitration for medical providers — React + TypeScript on the front, Python/FastAPI on the back, supporting the Verification of Benefits (VOB) pod's case-routing and rules workflows.",
+      "summary_es": "Plataforma full-stack para una healthtech de EE. UU. que gestiona arbitraje bajo el No Surprises Act para proveedores médicos — React + TypeScript en el front, Python/FastAPI en el back, dando soporte al pod de Verification of Benefits (VOB) en sus workflows de ruteo de casos y reglas.",
+      "role": "Technical Leader",
+      "role_es": "Líder Técnico",
+      "company": "Qubika",
+      "startDate": "2026-03",
+      "tech": ["React", "TypeScript", "Python", "FastAPI", "Azure DevOps"],
+      "problem": "VOB is the first decision point in every arbitration case: routing a dispute to federal NSA/IDR or one of 21 state-specific processes, a call that determines every downstream deadline and filing rule. The pod needed a reliable frontend and backend to support verifiers making that call, plus a growing rules engine to reduce manual routing work over time.",
+      "problem_es": "VOB es el primer punto de decisión en cada caso de arbitraje: rutear una disputa al proceso federal NSA/IDR o a uno de los 21 procesos estatales, una decisión que determina cada deadline y regla de filing posterior. El pod necesitaba un frontend y backend confiables para dar soporte a los verificadores en esa decisión, además de un rules engine creciente para reducir el trabajo manual de ruteo con el tiempo.",
+      "constraints": "Regulated healthcare domain with real patient and payer data, meaning every feature carried compliance weight beyond typical UX/engineering tradeoffs. As technical lead I owned delivery across both frontend and backend for the pod, while also being accountable for surfacing delivery risk to the client proactively rather than reactively.",
+      "constraints_es": "Dominio de salud regulado con datos reales de pacientes y payers, lo que implicaba que cada feature llevaba un peso de compliance más allá del tradeoff típico de UX/ingeniería. Como líder técnico, lideré la entrega tanto en frontend como en backend del pod, siendo además responsable de exponer el riesgo de delivery al cliente de forma proactiva y no reactiva.",
+      "approach": "Led a cross-functional pod building the rules-engine frontend (dynamic condition/action builders, rule-suggestion UI surfacing gap patterns from historical data) in React/TypeScript, backed by FastAPI services for case eligibility and rule-conflict detection. Coordinated schema alignment between frontend and backend as a first-class workstream rather than an afterthought, and introduced a recurring team status-report cadence to give the client early visibility into risks and blockers before they reached the daily sync.",
+      "approach_es": "Lideré un pod multidisciplinario construyendo el frontend del rules engine (constructores dinámicos de condiciones/acciones, UI de sugerencia de reglas que surge patrones de gaps a partir de datos históricos) en React/TypeScript, respaldado por servicios FastAPI para elegibilidad de casos y detección de conflictos de reglas. Coordiné la alineación de schema entre frontend y backend como un workstream de primer nivel y no como algo secundario, e introduje una cadencia recurrente de status report de equipo para darle al cliente visibilidad temprana de riesgos y bloqueos antes de que llegaran al daily sync.",
+      "outcome": "Shipped incremental rules-engine capabilities (rule suggestion UI, dynamic field configuration) that moved routing decisions from fully manual toward assisted. Established a repeatable delivery-risk reporting process that surfaces blockers and QA findings to the client ahead of the daily standup, reducing end-of-sprint surprises.",
+      "outcome_es": "Se entregaron capacidades incrementales del rules engine (UI de sugerencia de reglas, configuración dinámica de campos) que movieron las decisiones de ruteo de un proceso totalmente manual a uno asistido. Se estableció un proceso repetible de reporte de riesgo de delivery que expone bloqueos y hallazgos de QA al cliente antes del daily, reduciendo sorpresas a fin de sprint."
+    },
+    {
       "slug": "avant",
       "title": "Avant",
       "title_es": "Avant",
@@ -71,6 +91,7 @@
       "role_es": "Desarrollador Frontend Senior",
       "company": "Qubika",
       "startDate": "2024-12",
+      "endDate": "2026-03",
       "tech": [
         "React",
         "TypeScript",

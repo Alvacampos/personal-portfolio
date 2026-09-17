@@ -14,7 +14,7 @@ export const FORWARD_GROUPS: ForwardGroup[] = [
   {
     id: 'TECH_GROUP_LEARNING',
     variant: 'learning',
-    tech: ['Claude Certified Architect (CCA-F)', 'Python (deepening)'],
+    tech: ['Python (deepening)'],
   },
   {
     id: 'TECH_GROUP_FUTURE',

@@ -41,8 +41,8 @@ const certification = z.object({
   // badge — matches how in-progress degrees are surfaced. Degrees infer
   // in-progress state from `endDate > todayYearMonth`; certifications
   // don't have `endDate` on the schema, so this is an explicit flag on
-  // the JSON side. Set to `true` for in-flight programs (e.g. Claude
-  // Certified Architect); leave undefined for completed certifications.
+  // the JSON side. Set to `true` for in-flight programs; leave undefined
+  // for completed certifications.
   inProgress: z.boolean().optional(),
 });
 

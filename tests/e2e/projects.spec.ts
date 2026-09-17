@@ -22,15 +22,15 @@ test.describe('Projects (/projects)', () => {
   });
 
   test('ongoing project (no endDate) sorts before ended projects', async ({ page }) => {
-    // Imprint is the only project with no `endDate` in projects.json,
+    // HaloMD is the only project with no `endDate` in projects.json,
     // so it should render first. Grabs the section's card headings in
-    // DOM order and asserts Imprint is at index 0.
+    // DOM order and asserts HaloMD is at index 0.
     await page.goto('/projects');
     const titles = await page
       .locator('.projects-route__list')
       .getByRole('heading', { level: 2 })
       .allTextContents();
-    expect(titles[0]).toMatch(/^Imprint$/);
+    expect(titles[0]).toMatch(/^HaloMD/);
   });
 });
 

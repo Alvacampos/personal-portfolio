@@ -60,15 +60,18 @@ updates:
         update-types: ["version-update:semver-major"]
       - dependency-name: "@eslint/js"
         update-types: ["version-update:semver-major"]
-      # @cloudflare/workers-types v5 dropped the dated compatibility
-      # subpaths (`/2023-07-01`, `/latest`, ...) — the only entrypoint
-      # left is the main index. Our tsconfig.json still imports
-      # `@cloudflare/workers-types/2023-07-01`. Also blocked by
-      # wrangler@4's peer on `^4.x`; wrangler needs a matching release
-      # before v5 can land. Revisit when wrangler ships v4-that-accepts-5
-      # (or a new major with a widened peer).
-      - dependency-name: "@cloudflare/workers-types"
-        update-types: ["version-update:semver-major"]
+      # react-dom@19.3.0 adds ~8.8 kB gzipped to the entry.client chunk
+      # over 19.2.7 (measured 2026-09-17: 58.12 kB -> 66.94 kB, blowing
+      # the 62 kB size-limit budget on its own). Unclear yet whether
+      # that's new hydration/Actions machinery shipping unconditionally
+      # or something tree-shakeable we're missing. Revisit once the
+      # cause is understood — either fix the import to shake it out, or
+      # deliberately raise .size-limit.json's entry.client budget and
+      # unblock this.
+      - dependency-name: "react"
+        update-types: ["version-update:semver-minor"]
+      - dependency-name: "react-dom"
+        update-types: ["version-update:semver-minor"]
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:

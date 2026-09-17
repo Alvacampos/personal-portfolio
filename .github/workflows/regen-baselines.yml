@@ -41,7 +41,7 @@ jobs:
     # Same image and pinned version the CI gate uses, so baselines and
     # checks are pixel-identical by construction.
     container:
-      image: mcr.microsoft.com/playwright:v1.61.0-jammy
+      image: mcr.microsoft.com/playwright:v1.63.0-jammy
       options: --ipc=host
     permissions:
       # Needed to push the regenerated PNGs back to the branch.
