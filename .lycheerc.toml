@@ -56,11 +56,6 @@ exclude = [
   "^https?://.*\\.example\\.com",
   "^https?://example\\.com",
   # LinkedIn 999s crawlers hard — treat 999 as OK below via accept codes.
-  # Illustrative placeholder in a Zod error message
-  # (app/data/education-schema.ts) — "https://…" with a literal ellipsis
-  # character, not a real link. Lychee's extractor matches it as a URL
-  # and then fails to parse the ellipsis as a domain.
-  "^https://…",
 ]
 
 # Accept these HTTP status codes as OK. LinkedIn returns 999 to non-

@@ -34,7 +34,8 @@ const certification = z.object({
   url: z
     .string()
     .refine((v) => /^(https?:\/\/|\/)/.test(v), {
-      message: 'Expected a full URL (https://…) or a site-relative path starting with /',
+      message:
+        'Expected a full URL (starting with http:// or https://) or a site-relative path starting with /',
     })
     .optional(),
   // When true, the certification renders with the "Currently studying"
