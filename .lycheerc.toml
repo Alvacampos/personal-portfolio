@@ -7,12 +7,20 @@
 # What to scan. Markdown docs + source-file URL literals are the useful
 # surface; ignore build outputs, node_modules, lockfiles, and generated
 # lighthouse summaries (they're just JSON, no clickable links).
-include = [
-  "**/*.md",
-  "app/**/*.{ts,tsx,js,jsx,css}",
-  "public/robots.txt",
-  "public/sitemap.xml",
-]
+#
+# NOTE: lychee's `include` config key is a URL-matching regex allowlist,
+# NOT a file-glob selector — it does not mean "scan these files". File
+# selection instead falls out of directory traversal from the `.`
+# argument in the workflow's `args`, filtered by `extensions` below and
+# `exclude_path`. (A prior version of this file passed literal glob
+# strings — `**/*.md` etc. — into `include`, which lychee tried to
+# compile as a regex and crashed on the bare `**` every single run.)
+#
+# `extensions` matters just as much: lychee only recognizes md/txt/html
+# by default, so without listing ts/tsx/js/jsx/css/xml explicitly here,
+# every source file and sitemap.xml is silently skipped even though the
+# comment above claims they're in scope.
+extensions = ["md", "html", "txt", "xml", "ts", "tsx", "js", "jsx", "css"]
 exclude_path = [
   "node_modules",
   "build",
