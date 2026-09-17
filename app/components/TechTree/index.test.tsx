@@ -16,8 +16,8 @@ describe('TechTree', () => {
     const { container } = renderWithProviders(<TechTree groups={SAMPLE} />);
     const items = container.querySelectorAll('.tech-tree-component__item');
     const groups = container.querySelectorAll('.tech-tree-component__group-title');
-    // 4 + 2 + 1 = 7 data chips, plus 2 learning + 1 future = 3 forward chips
-    expect(items.length).toBe(7 + 3);
+    // 4 + 2 + 1 = 7 data chips, plus 1 learning + 1 future = 2 forward chips
+    expect(items.length).toBe(7 + 2);
     // 3 data groups + Learning + Future = 5 group titles
     expect(groups.length).toBe(5);
   });

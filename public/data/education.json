@@ -50,21 +50,44 @@
     {
       "title": "Certification",
       "title_es": "Certificación",
+      "startDate": "2026-09",
+      "institution": "Claude Certified Architect — Foundations (CCA-F)",
+      "description": "Anthropic's foundational certification for AI-application architects — covers Claude API surface, tool use, MCP, agents, caching, and prompt engineering patterns. Issued September 2026, valid through September 2027.",
+      "description_es": "Certificación fundacional de Anthropic para arquitectos de aplicaciones de IA — cubre la API de Claude, tool use, MCP, agentes, caching y patrones de prompt engineering. Emitida en septiembre de 2026, válida hasta septiembre de 2027.",
+      "url": "https://www.credly.com/badges/ee3c3ba4-439a-4bde-a532-193fb165c689/linked_in_profile"
+    },
+    {
+      "title": "Certification",
+      "title_es": "Certificación",
+      "startDate": "2026-09",
+      "institution": "Building with the Claude API — Anthropic",
+      "description": "Hands-on Anthropic course covering the Claude API, Claude Code, and the Claude Agent SDK for building agentic applications. Credential ID: 7k7rszuooxj6.",
+      "description_es": "Curso práctico de Anthropic sobre la API de Claude, Claude Code y el Claude Agent SDK para construir aplicaciones agénticas. ID de credencial: 7k7rszuooxj6."
+    },
+    {
+      "title": "Certification",
+      "title_es": "Certificación",
+      "startDate": "2026-08",
+      "institution": "Introduction to Agent Skills — Anthropic",
+      "description": "Anthropic course on Claude Skills — packaging reusable, composable capabilities for Claude-based agents. Credential ID: j26xv2eqtp9j.",
+      "description_es": "Curso de Anthropic sobre Claude Skills — empaquetar capacidades reutilizables y componibles para agentes basados en Claude. ID de credencial: j26xv2eqtp9j."
+    },
+    {
+      "title": "Certification",
+      "title_es": "Certificación",
       "startDate": "2026-07",
       "institution": "Claude 101 — Anthropic",
-      "description": "Anthropic's introductory Claude course — API basics, prompt engineering fundamentals, tool use, and MCP overview.",
-      "description_es": "Curso introductorio de Anthropic sobre Claude — bases de la API, fundamentos de prompt engineering, tool use y overview de MCP.",
+      "description": "Anthropic's introductory Claude course — API basics, prompt engineering fundamentals, tool use, and MCP overview. Credential ID: anjigutmgied.",
+      "description_es": "Curso introductorio de Anthropic sobre Claude — bases de la API, fundamentos de prompt engineering, tool use y overview de MCP. ID de credencial: anjigutmgied.",
       "url": "/assets/files/claude101-certificate.pdf"
     },
     {
       "title": "Certification",
       "title_es": "Certificación",
-      "startDate": "2026-06",
-      "institution": "Claude Certified Architect — Foundations (CCA-F)",
-      "description": "Anthropic's foundational certification for AI-application architects — covers Claude API surface, tool use, MCP, agents, caching, and prompt engineering patterns.",
-      "description_es": "Certificación fundacional de Anthropic para arquitectos de aplicaciones de IA — cubre la API de Claude, tool use, MCP, agentes, caching y patrones de prompt engineering.",
-      "url": "https://www.anthropic.com/claude-certifications",
-      "inProgress": true
+      "startDate": "2025-07",
+      "institution": "Datadog",
+      "description": "Datadog Quick Start certification — fundamentals of monitoring, logging, and observability on the Datadog platform.",
+      "description_es": "Certificación Datadog Quick Start — fundamentos de monitoreo, logging y observabilidad en la plataforma Datadog."
     },
     {
       "title": "Certification",
