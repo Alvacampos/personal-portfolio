@@ -1,0 +1,103 @@
+{
+  "fetchTime": "2026-09-17T21:41:18.581Z",
+  "requestedUrl": "https://gonzalo-alvarez-campos-cv.com/",
+  "finalUrl": "https://gonzalo-alvarez-campos-cv.com/",
+  "lighthouseVersion": "13.4.1",
+  "commit": "d66e641",
+  "categories": {
+    "performance": 0.79,
+    "accessibility": 1,
+    "best-practices": 1,
+    "seo": 1
+  },
+  "metrics": {
+    "fcp": {
+      "displayValue": "3.0 s",
+      "numericValue": 3038.1539999999995,
+      "score": 0.48
+    },
+    "lcp": {
+      "displayValue": "3.5 s",
+      "numericValue": 3521.9154999999996,
+      "score": 0.63
+    },
+    "si": {
+      "displayValue": "3.3 s",
+      "numericValue": 3277.6372300000107,
+      "score": 0.91
+    },
+    "tbt": {
+      "displayValue": "280 ms",
+      "numericValue": 283.5,
+      "score": 0.8
+    },
+    "cls": {
+      "displayValue": "0",
+      "numericValue": 0,
+      "score": 1
+    },
+    "tti": {
+      "displayValue": "3.7 s",
+      "numericValue": 3729.8789500000003,
+      "score": 0.9
+    },
+    "ttfb": 146
+  },
+  "failingAudits": [
+    {
+      "id": "first-contentful-paint",
+      "title": "First Contentful Paint",
+      "score": 0.48
+    },
+    {
+      "id": "largest-contentful-paint",
+      "title": "Largest Contentful Paint",
+      "score": 0.63
+    },
+    {
+      "id": "speed-index",
+      "title": "Speed Index",
+      "score": 0.91
+    },
+    {
+      "id": "total-blocking-time",
+      "title": "Total Blocking Time",
+      "score": 0.8
+    },
+    {
+      "id": "max-potential-fid",
+      "title": "Max Potential First Input Delay",
+      "score": 0.48
+    },
+    {
+      "id": "interactive",
+      "title": "Time to Interactive",
+      "score": 0.9
+    },
+    {
+      "id": "unused-javascript",
+      "title": "Reduce unused JavaScript",
+      "score": 0
+    },
+    {
+      "id": "cache-insight",
+      "title": "Use efficient cache lifetimes",
+      "score": 0.5
+    },
+    {
+      "id": "legacy-javascript-insight",
+      "title": "Legacy JavaScript",
+      "score": 0.5
+    },
+    {
+      "id": "network-dependency-tree-insight",
+      "title": "Network dependency tree",
+      "score": 0
+    },
+    {
+      "id": "render-blocking-insight",
+      "title": "Render-blocking requests",
+      "score": 0
+    }
+  ]
+}

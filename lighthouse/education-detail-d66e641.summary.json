@@ -1,34 +1,34 @@
 {
-  "fetchTime": "2026-07-07T14:20:19.578Z",
-  "requestedUrl": "https://gonzalo-alvarez-campos-cv.com/education",
-  "finalUrl": "https://gonzalo-alvarez-campos-cv.com/education",
-  "lighthouseVersion": "13.4.0",
-  "commit": "db15397",
+  "fetchTime": "2026-09-17T21:41:47.430Z",
+  "requestedUrl": "https://gonzalo-alvarez-campos-cv.com/education/degree",
+  "finalUrl": "https://gonzalo-alvarez-campos-cv.com/education/degree",
+  "lighthouseVersion": "13.4.1",
+  "commit": "d66e641",
   "categories": {
-    "performance": 0.91,
+    "performance": 0.92,
     "accessibility": 1,
     "best-practices": 1,
     "seo": 1
   },
   "metrics": {
     "fcp": {
-      "displayValue": "2.5 s",
-      "numericValue": 2542.9288,
-      "score": 0.66
+      "displayValue": "2.3 s",
+      "numericValue": 2302.4051,
+      "score": 0.74
     },
     "lcp": {
-      "displayValue": "3.0 s",
-      "numericValue": 2957.321999999999,
-      "score": 0.79
+      "displayValue": "2.9 s",
+      "numericValue": 2932.2153,
+      "score": 0.8
     },
     "si": {
-      "displayValue": "2.5 s",
-      "numericValue": 2542.9288,
-      "score": 0.97
+      "displayValue": "2.3 s",
+      "numericValue": 2302.4051,
+      "score": 0.99
     },
     "tbt": {
       "displayValue": "0 ms",
-      "numericValue": 3.5,
+      "numericValue": 4,
       "score": 1
     },
     "cls": {
@@ -37,27 +37,27 @@
       "score": 1
     },
     "tti": {
-      "displayValue": "3.0 s",
-      "numericValue": 3014.5611599999997,
+      "displayValue": "2.9 s",
+      "numericValue": 2939.7153,
       "score": 0.96
     },
-    "ttfb": 32
+    "ttfb": 20
   },
   "failingAudits": [
     {
       "id": "first-contentful-paint",
       "title": "First Contentful Paint",
-      "score": 0.66
+      "score": 0.74
     },
     {
       "id": "largest-contentful-paint",
       "title": "Largest Contentful Paint",
-      "score": 0.79
+      "score": 0.8
     },
     {
       "id": "speed-index",
       "title": "Speed Index",
-      "score": 0.97
+      "score": 0.99
     },
     {
       "id": "interactive",
@@ -75,6 +75,11 @@
       "score": 0.5
     },
     {
+      "id": "legacy-javascript-insight",
+      "title": "Legacy JavaScript",
+      "score": 0.5
+    },
+    {
       "id": "network-dependency-tree-insight",
       "title": "Network dependency tree",
       "score": 0
@@ -82,7 +87,7 @@
     {
       "id": "render-blocking-insight",
       "title": "Render-blocking requests",
-      "score": 0
+      "score": 0.5
     }
   ]
 }

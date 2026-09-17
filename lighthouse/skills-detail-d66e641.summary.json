@@ -1,34 +1,34 @@
 {
-  "fetchTime": "2026-07-08T23:39:57.404Z",
-  "requestedUrl": "https://gonzalo-alvarez-campos-cv.com/education",
-  "finalUrl": "https://gonzalo-alvarez-campos-cv.com/education",
-  "lighthouseVersion": "13.4.0",
-  "commit": "e71e0f6",
+  "fetchTime": "2026-09-17T21:41:41.059Z",
+  "requestedUrl": "https://gonzalo-alvarez-campos-cv.com/skills/1",
+  "finalUrl": "https://gonzalo-alvarez-campos-cv.com/skills/1",
+  "lighthouseVersion": "13.4.1",
+  "commit": "d66e641",
   "categories": {
-    "performance": 0.9,
+    "performance": 0.92,
     "accessibility": 1,
     "best-practices": 1,
     "seo": 1
   },
   "metrics": {
     "fcp": {
-      "displayValue": "2.7 s",
-      "numericValue": 2691.2286,
-      "score": 0.6
+      "displayValue": "2.5 s",
+      "numericValue": 2452.3365,
+      "score": 0.69
     },
     "lcp": {
-      "displayValue": "3.0 s",
-      "numericValue": 2994.6858,
-      "score": 0.78
+      "displayValue": "2.9 s",
+      "numericValue": 2853.5047499999996,
+      "score": 0.82
     },
     "si": {
-      "displayValue": "2.7 s",
-      "numericValue": 2691.2286,
-      "score": 0.96
+      "displayValue": "2.5 s",
+      "numericValue": 2452.3365,
+      "score": 0.98
     },
     "tbt": {
-      "displayValue": "10 ms",
-      "numericValue": 7,
+      "displayValue": "0 ms",
+      "numericValue": 3.5,
       "score": 1
     },
     "cls": {
@@ -37,27 +37,27 @@
       "score": 1
     },
     "tti": {
-      "displayValue": "3.0 s",
-      "numericValue": 2994.6858,
+      "displayValue": "2.9 s",
+      "numericValue": 2877.9622125,
       "score": 0.96
     },
-    "ttfb": 43
+    "ttfb": 23
   },
   "failingAudits": [
     {
       "id": "first-contentful-paint",
       "title": "First Contentful Paint",
-      "score": 0.6
+      "score": 0.69
     },
     {
       "id": "largest-contentful-paint",
       "title": "Largest Contentful Paint",
-      "score": 0.78
+      "score": 0.82
     },
     {
       "id": "speed-index",
       "title": "Speed Index",
-      "score": 0.96
+      "score": 0.98
     },
     {
       "id": "interactive",
@@ -72,6 +72,11 @@
     {
       "id": "cache-insight",
       "title": "Use efficient cache lifetimes",
+      "score": 0.5
+    },
+    {
+      "id": "legacy-javascript-insight",
+      "title": "Legacy JavaScript",
       "score": 0.5
     },
     {
