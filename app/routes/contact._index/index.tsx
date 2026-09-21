@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { FormattedMessage, useIntl } from 'react-intl';
-import type { ActionFunctionArgs, MetaFunction } from 'react-router';
-import { data, Form, useActionData, useNavigation } from 'react-router';
+import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from 'react-router';
+import { data, Form, useActionData, useLoaderData, useNavigation } from 'react-router';
 import { z } from 'zod';
 
+import TurnstileWidget from '~/components/TurnstileWidget';
 import { hashIp } from '~/utils/hash-ip';
 import { getCloudflare } from '~/utils/load-context';
 import { mergeRouteMeta } from '~/utils/meta';
+import { getTurnstileConfig, TURNSTILE_FIELD, verifyTurnstile } from '~/utils/turnstile';
 import { getClassMaker } from '~/utils/utils';
 
 import styles from './style.css?url';
@@ -42,7 +44,7 @@ type FieldErrors = Partial<Record<keyof z.infer<typeof ContactSchema>, string>>;
 type ActionResponse =
   | { status: 'ok' }
   | { status: 'error'; reason: 'validation'; fieldErrors: FieldErrors }
-  | { status: 'error'; reason: 'rate-limit' | 'send-failed' };
+  | { status: 'error'; reason: 'rate-limit' | 'send-failed' | 'captcha' };
 
 // Per-IP per-hour rate limit. KV is eventually consistent (~5-60s
 // propagation) but that's fine for a soft cap — a real attacker would
@@ -62,6 +64,14 @@ const ALLOWED_ORIGINS = new Set([
   // Local dev + wrangler preview both use this origin.
   'http://localhost:8788',
 ]);
+
+// Hands the Turnstile site key (public by design) to the client, or
+// `null` when Turnstile isn't configured for this deploy — in which case
+// the form renders without a widget and the action skips verification.
+export async function loader({ context }: LoaderFunctionArgs) {
+  const turnstile = getTurnstileConfig(getCloudflare(context).env);
+  return { turnstileSiteKey: turnstile.enabled ? turnstile.siteKey : null };
+}
 
 export async function action({ request, context }: ActionFunctionArgs) {
   const origin = request.headers.get('Origin');
@@ -89,6 +99,31 @@ export async function action({ request, context }: ActionFunctionArgs) {
   const count = current ? Number.parseInt(current, 10) || 0 : 0;
   if (count >= RATE_LIMIT_PER_HOUR) {
     return data<ActionResponse>({ status: 'error', reason: 'rate-limit' }, { status: 429 });
+  }
+
+  // Turnstile: proves a browser actually ran Cloudflare's challenge.
+  // This is what stops scripted POSTs — the Origin check above is just a
+  // header a non-browser client sets to whatever it likes, and a bot
+  // posting one message per IP sails under the per-IP rate limit. Runs
+  // BEFORE the honeypot so a bot that fills it still has to pass the
+  // challenge first. A missing token is rejected without a subrequest.
+  const turnstile = getTurnstileConfig(env);
+  if (turnstile.enabled) {
+    if (!turnstile.secret) {
+      // Fail closed: a site key with no secret is a misconfiguration,
+      // and silently skipping verification would look "working" while
+      // protecting nothing.
+      console.error('TURNSTILE_SITE_KEY is set but TURNSTILE_SECRET_KEY is missing');
+      return data<ActionResponse>({ status: 'error', reason: 'send-failed' }, { status: 500 });
+    }
+    const human = await verifyTurnstile({
+      token: raw[TURNSTILE_FIELD],
+      secret: turnstile.secret,
+      ip,
+    });
+    if (!human) {
+      return data<ActionResponse>({ status: 'error', reason: 'captcha' }, { status: 403 });
+    }
   }
 
   // Silent-drop honeypot. Any non-empty value, or any non-string entry
@@ -186,10 +221,18 @@ function escapeHtml(s: string): string {
     .replace(/'/g, '&#39;');
 }
 
+// Form-level (non-field) error → the intl key that explains it.
+const FORM_ERROR_KEYS = {
+  'rate-limit': 'CONTACT_RATE_LIMITED',
+  captcha: 'CONTACT_CAPTCHA_ERROR',
+  'send-failed': 'CONTACT_ERROR',
+} as const;
+
 export default function ContactRoute() {
   const actionData = useActionData<typeof action>();
+  const { turnstileSiteKey } = useLoaderData<typeof loader>();
   const navigation = useNavigation();
-  const { formatMessage } = useIntl();
+  const { formatMessage, locale } = useIntl();
   const isSubmitting = navigation.state === 'submitting';
 
   // Track which `actionData` reference the user has dismissed so
@@ -206,6 +249,29 @@ export default function ContactRoute() {
     if (!dismissed) setDismissedRef(actionData);
   };
 
+  // Turnstile tokens are single-use: once the server has seen one (even
+  // on a validation error that keeps the form on screen), it's spent.
+  // Whenever a new response arrives, drop the old token and remount the
+  // widget so the visitor gets a fresh one for the resubmit. Same
+  // state-reset-on-prop-change pattern as `dismissedRef` above.
+  const [token, setToken] = useState<string | null>(null);
+  const [widgetKey, setWidgetKey] = useState(0);
+  const [widgetFailed, setWidgetFailed] = useState(false);
+  const [seenActionData, setSeenActionData] = useState(actionData);
+  if (actionData !== seenActionData) {
+    setSeenActionData(actionData);
+    setToken(null);
+    setWidgetFailed(false);
+    setWidgetKey((k) => k + 1);
+  }
+  const handleToken = (next: string | null) => {
+    setToken(next);
+    // Turnstile retries on its own after a transient error; a token
+    // arriving means the earlier failure resolved.
+    if (next) setWidgetFailed(false);
+  };
+  const awaitingToken = turnstileSiteKey !== null && !token;
+
   const fieldErrors =
     !dismissed && actionData?.status === 'error' && actionData.reason === 'validation'
       ? actionData.fieldErrors
@@ -214,7 +280,10 @@ export default function ContactRoute() {
     !dismissed && actionData?.status === 'error' && actionData.reason !== 'validation'
       ? actionData.reason
       : undefined;
-  const hasActiveError = Boolean(fieldErrors || formError);
+  // A rejected captcha isn't a "broken payload" the visitor must edit —
+  // resubmitting unchanged with a fresh token is legitimate, and the
+  // token gate below already blocks the button until one arrives.
+  const hasActiveError = Boolean(fieldErrors || (formError && formError !== 'captcha'));
 
   // Render the success card in place of the form. The form unmounts,
   // so there's no double-submit risk and the visitor gets a clear
@@ -292,20 +361,45 @@ export default function ContactRoute() {
           defaultValue=""
         />
 
+        {turnstileSiteKey !== null && (
+          <>
+            <input type="hidden" name={TURNSTILE_FIELD} value={token ?? ''} />
+            <TurnstileWidget
+              key={widgetKey}
+              siteKey={turnstileSiteKey}
+              language={locale}
+              onToken={handleToken}
+              onError={() => setWidgetFailed(true)}
+            />
+          </>
+        )}
+
+        {widgetFailed && (
+          <p className={getClasses('form-error')} role="alert">
+            <FormattedMessage id="CONTACT_CAPTCHA_LOAD_ERROR" />
+          </p>
+        )}
+
         {formError && (
           <p className={getClasses('form-error')} role="alert">
-            <FormattedMessage
-              id={formError === 'rate-limit' ? 'CONTACT_RATE_LIMITED' : 'CONTACT_ERROR'}
-            />
+            <FormattedMessage id={FORM_ERROR_KEYS[formError]} />
           </p>
         )}
 
         <button
           type="submit"
           className={getClasses('submit')}
-          disabled={isSubmitting || hasActiveError}
+          disabled={isSubmitting || hasActiveError || awaitingToken}
         >
-          <FormattedMessage id={isSubmitting ? 'CONTACT_SUBMITTING' : 'CONTACT_SUBMIT'} />
+          <FormattedMessage
+            id={
+              isSubmitting
+                ? 'CONTACT_SUBMITTING'
+                : awaitingToken && !widgetFailed
+                  ? 'CONTACT_VERIFYING'
+                  : 'CONTACT_SUBMIT'
+            }
+          />
         </button>
       </Form>
     </div>

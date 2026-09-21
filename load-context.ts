@@ -6,6 +6,9 @@
 declare global {
   interface Env {
     RESEND_API_KEY: string;
+    // Optional on purpose: it is only required once TURNSTILE_SITE_KEY
+    // (a wrangler.jsonc var) is non-empty. See app/utils/turnstile.ts.
+    TURNSTILE_SECRET_KEY?: string;
   }
 }
 
