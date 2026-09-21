@@ -2,7 +2,8 @@
 
 The site is a public CV — no auth, no user data, no session state. The
 surface is essentially: the SSR HTML, the `.data` Single-Fetch endpoints
-that back client-side nav, the `/contact` action, and the static assets.
+that back client-side nav, the `/contact` action, and the static assets
+(including the CV PDF).
 This doc records what's in place and why.
 
 ## CSP nonce
@@ -32,6 +33,18 @@ inline `style={{ }}` attributes (skeleton widths, heatmap grid vars,
 etc.). Hashing every inline style is impractical and the attack cost
 of style-based data exfiltration on a public CV is low. Everything
 else uses strict allow-lists.
+
+**Turnstile allowance.** When (and only when) `TURNSTILE_SITE_KEY` is
+set, `buildCsp()` ([app/utils/csp.ts](../app/utils/csp.ts)) adds
+`https://challenges.cloudflare.com` to `script-src` and a
+`frame-src` for the same origin (needed because `default-src 'none'`
+would otherwise block the widget's iframe). It is applied to **all**
+nonced HTML, not just `/contact`: the CSP that governs a page is the
+one from the document that first loaded, so a visitor who lands on
+`/skills` and client-navigates to `/contact` would otherwise get a
+widget the browser blocks. Static assets never get it. With no site
+key configured the policy is byte-for-byte the pre-Turnstile one
+(pinned by `app/utils/csp.test.ts`).
 
 **Other headers** (via `STATIC_SECURITY_HEADERS`):
 
@@ -70,6 +83,55 @@ namespace from being a readable audit trail of visitors. Sentinel
 
 ## `/contact` action
 
+Checks run in this order, cheapest first: Origin → rate limit →
+**Turnstile** → honeypot → Zod → send. `app/routes/contact._index/action.test.ts`
+pins the order.
+
+**Why Turnstile.** The first three defences (Origin, honeypot, per-IP
+rate limit) all fail against a scripted bot: `Origin` is just a header
+a non-browser client sets to whatever it likes; a bot that never renders
+the page never sees the honeypot; and a bot that sends one message per
+IP (residential proxies) never trips a per-IP counter. Observed in
+production: the same template message ("Newsletter subscription — I
+would like more information…") arriving from different addresses.
+Turnstile is the first check that requires a real browser to have run
+Cloudflare's challenge.
+
+**Turnstile.** Opt-in per deploy via the `TURNSTILE_SITE_KEY` var in
+`wrangler.jsonc` (public by design; empty = off). The token comes from an
+explicitly-rendered `interaction-only` widget
+([app/components/TurnstileWidget/](../app/components/TurnstileWidget/)) —
+invisible to most visitors, a checkbox only when Cloudflare is
+suspicious — and is verified server-side against `siteverify` with
+`TURNSTILE_SECRET_KEY` (a Worker secret,
+[app/utils/turnstile.ts](../app/utils/turnstile.ts)).
+
+- **Fails closed.** A missing/oversized token, a non-2xx from
+  Cloudflare, or a network error all reject the submission; a site key
+  with no secret returns 500 and logs, rather than silently skipping
+  verification. A Cloudflare outage means the form is briefly
+  unavailable, not open to bots.
+- **Tokens are single-use** (valid ~5 min). The form remounts the widget
+  after every server response so a resubmit after a validation error
+  carries a fresh token instead of a spent one.
+- **Runs before the honeypot**, so a bot that fills the honeypot still
+  has to pass the challenge; a token-less POST is rejected without a
+  subrequest.
+- The widget is told not to inject its own hidden input
+  (`response-field: false`); the form's controlled input is the single
+  source of truth for `cf-turnstile-response`.
+- **Enabling it** — order matters: create the widget in the Cloudflare
+  dashboard (Turnstile → Add widget, hostname
+  `gonzalo-alvarez-campos-cv.com`), run
+  `npx wrangler secret put TURNSTILE_SECRET_KEY` **first**, then set
+  `TURNSTILE_SITE_KEY` in `wrangler.jsonc` and deploy. Key before secret
+  makes `/contact` fail closed until the secret lands.
+- **Local testing** with Cloudflare's published dummy keys (sitekey
+  `1x00000000000000000000AA`, secret `1x0000000000000000000000000000000AA`
+  always pass; secret `2x0000000000000000000000000000000AA` always
+  fails) via `wrangler dev --var TURNSTILE_SITE_KEY:<key>` plus a
+  gitignored `.dev.vars`. `npm run dev` (Vite) and CI leave Turnstile off.
+
 **CSRF.** Origin allow-list (`https://gonzalo-alvarez-campos-cv.com`,
 `http://localhost:8788`). Cross-site form posts carry a different
 origin (or `null` for stripped-privacy submissions) and get rejected
@@ -88,16 +150,50 @@ strategy as `.data`; different key prefix (`ratelimit:contact:`).
 top of the action; invalid submissions get a 400 with a per-field
 error map.
 
+## CV / PDF download rate limit
+
+**Threat.** The CV (and certificate) PDFs under `/assets/files/` carry
+contact details, and a scraper looping over them costs Worker requests.
+**Cap.** 60/hour per hashed IP, enforced in `workers/app.ts` before the
+asset is fetched; over the cap gets a `429` with `Retry-After`. Real
+visitors download the CV once or twice (the hover-prefetch plus the
+click can count as two requests).
+
+**Deliberately no captcha here.** The CV's audience is recruiters, and a
+challenge on the download is friction on the one action the site exists
+for. The address in the PDF is also already public (it's in
+`wrangler.jsonc` in this public repo and on the profile pages), so
+gating the file wouldn't protect it. The per-IP cap only stops a
+single-address loop; anything distributed needs an edge rule (below).
+
+## Edge-layer protections (Cloudflare dashboard — not in this repo)
+
+The in-Worker limits above are soft (KV is eventually consistent) and
+per-IP, so they don't stop a distributed bot. The real backstop is
+Cloudflare's edge, configured per zone in the dashboard:
+
+- **Bot Fight Mode** (Security → Bots) — free; challenges known-bad
+  automation before it reaches the Worker.
+- **A rate-limiting rule** (Security → WAF → Rate limiting) on
+  `POST /contact` and on `/assets/files/*.pdf` — enforced at the edge
+  across all of a client's requests, without KV.
+- **Turnstile analytics** (Turnstile → the widget) — shows solve/fail
+  rates, so a spike in failures is visible.
+
 ## `RATELIMIT_KV` keys
 
-Both rate limits share the `RATELIMIT_KV` namespace. New rate-limited
+All rate limits share the `RATELIMIT_KV` namespace. New rate-limited
 surfaces MUST add a purpose prefix so keys can't collide:
 
 | Purpose       | Key shape                        | TTL   | Cap     |
 | ------------- | -------------------------------- | ----- | ------- |
 | `.data` reads | `ratelimit:data:<sha256(ip)>`    | 3600s | 60/hour |
+| PDF downloads | `ratelimit:pdf:<sha256(ip)>`     | 3600s | 60/hour |
 | `/contact`    | `ratelimit:contact:<sha256(ip)>` | 3600s | 3/hour  |
 
+`.data` and PDF share the `isOverLimit()` helper in
+[app/utils/rate-limit.ts](../app/utils/rate-limit.ts); `/contact` keeps
+its own counter because it only increments after validation passes.
 Hashing uses the shared helper in [app/utils/hash-ip.ts](../app/utils/hash-ip.ts).
 
 ## SSR HTML is `Cache-Control: private`

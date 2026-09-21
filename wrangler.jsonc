@@ -34,6 +34,14 @@
   "vars": {
     "CONTACT_FROM": "onboarding@resend.dev",
     "CONTACT_TO": "gonzaloralvarezcampos@gmail.com",
+    // Cloudflare Turnstile site key (public by design). Empty = Turnstile
+    // is OFF: no widget, no server-side check, no CSP additions. To turn
+    // it on, create a widget in the Cloudflare dashboard (Turnstile →
+    // Add widget, hostname gonzalo-alvarez-campos-cv.com), then in THIS
+    // ORDER: (1) `npx wrangler secret put TURNSTILE_SECRET_KEY`, and
+    // only then (2) put the site key here and deploy. Setting the key
+    // before the secret makes /contact fail closed. See docs/security.md.
+    "TURNSTILE_SITE_KEY": "",
   },
   // Per-IP per-hour submission counter for the /contact form.
   // Same KV namespace the Pages project used — namespaces are
