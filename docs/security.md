@@ -97,8 +97,9 @@ would like more information…") arriving from different addresses.
 Turnstile is the first check that requires a real browser to have run
 Cloudflare's challenge.
 
-**Turnstile.** Opt-in per deploy via the `TURNSTILE_SITE_KEY` var in
-`wrangler.jsonc` (public by design; empty = off). The token comes from an
+**Turnstile.** Controlled by the `TURNSTILE_SITE_KEY` var in
+`wrangler.jsonc` (public by design; non-empty = on — production has it
+set — and empty = off). The token comes from an
 explicitly-rendered `interaction-only` widget
 ([app/components/TurnstileWidget/](../app/components/TurnstileWidget/)) —
 invisible to most visitors, a checkbox only when Cloudflare is
@@ -120,17 +121,33 @@ suspicious — and is verified server-side against `siteverify` with
 - The widget is told not to inject its own hidden input
   (`response-field: false`); the form's controlled input is the single
   source of truth for `cf-turnstile-response`.
-- **Enabling it** — order matters: create the widget in the Cloudflare
-  dashboard (Turnstile → Add widget, hostname
-  `gonzalo-alvarez-campos-cv.com`), run
-  `npx wrangler secret put TURNSTILE_SECRET_KEY` **first**, then set
-  `TURNSTILE_SITE_KEY` in `wrangler.jsonc` and deploy. Key before secret
-  makes `/contact` fail closed until the secret lands.
+- **Setting it up** (done once; repeat if the widget is recreated) —
+  order matters: create the widget in the Cloudflare dashboard
+  (Turnstile → Add widget, hostname `gonzalo-alvarez-campos-cv.com`,
+  mode Managed), run `npx wrangler secret put TURNSTILE_SECRET_KEY`
+  **first**, then set `TURNSTILE_SITE_KEY` in `wrangler.jsonc` and
+  deploy. Key before secret makes `/contact` fail closed until the
+  secret lands. In that command the argument is the secret's **name**;
+  the value is pasted at the prompt. Pasting the value as the argument
+  silently creates a secret _named_ after it (and leaves
+  `TURNSTILE_SECRET_KEY` unset) — `npx wrangler secret list` shows
+  names only, so check that `TURNSTILE_SECRET_KEY` is in it before
+  deploying.
+- **Rotating the secret.** Cloudflare allows one rotation per 2 hours
+  and keeps the old secret valid while the new one is being activated.
+  After rotating, re-run `npx wrangler secret put TURNSTILE_SECRET_KEY`
+  with the new value. The site key does not change on rotation, so no
+  code change or deploy is needed.
 - **Local testing** with Cloudflare's published dummy keys (sitekey
   `1x00000000000000000000AA`, secret `1x0000000000000000000000000000000AA`
   always pass; secret `2x0000000000000000000000000000000AA` always
   fails) via `wrangler dev --var TURNSTILE_SITE_KEY:<key>` plus a
-  gitignored `.dev.vars`. `npm run dev` (Vite) and CI leave Turnstile off.
+  gitignored `.dev.vars`. `npm run dev` (Vite) and the Playwright E2E
+  suite leave Turnstile off (their stub env has no site key); `wrangler
+dev` uses the committed site key, so without a secret in `.dev.vars`
+  its contact form fails closed. The widget refuses to run on any
+  hostname not in its allow-list, so `localhost` can only exercise it
+  through the dummy keys above.
 
 **CSRF.** Origin allow-list (`https://gonzalo-alvarez-campos-cv.com`,
 `http://localhost:8788`). Cross-site form posts carry a different
