@@ -1,9 +1,9 @@
 // Cloudflare Turnstile helpers. See docs/security.md § "Turnstile".
 //
-// Turnstile is opt-in per deploy: it's active only when the
-// `TURNSTILE_SITE_KEY` var is non-empty in wrangler.jsonc. That keeps
-// local dev, CI, and the window between "code merged" and "widget
-// created in the Cloudflare dashboard" working without a captcha.
+// Turnstile is active only when the `TURNSTILE_SITE_KEY` var is
+// non-empty in wrangler.jsonc (it is, for production). The Vite dev
+// server and the Playwright E2E suite use a stub env with no key, so
+// they run without a captcha; setting the var to "" turns it off.
 
 export const TURNSTILE_ORIGIN = 'https://challenges.cloudflare.com';
 export const TURNSTILE_SCRIPT_SRC = `${TURNSTILE_ORIGIN}/turnstile/v0/api.js?render=explicit`;
