@@ -14,6 +14,11 @@
 > decisions came out of it too (Telegram group scope, admin login
 > mechanism, USD reference rate, receipt granularity) — asked rather than
 > assumed, and answered; see the "Decided already" table just below.
+>
+> See also: [finance-frontend.md](finance-frontend.md) (the `/admin`
+> frontend plan, which added Phase 4C below) and
+> [finance-tracker-ledger.md](finance-tracker-ledger.md) (running status +
+> decision log across both halves of the project).
 
 ## 1. What this is
 
@@ -481,16 +486,17 @@ it's the one actually doing the work on the write side.
 
 ## 7. Endpoints (concrete v1 list)
 
-| Method + path                   | Purpose                                                             | Auth                           |
-| ------------------------------- | ------------------------------------------------------------------- | ------------------------------ |
-| `POST /telegram/webhook`        | Receives Telegram updates                                           | Telegram `secret_token` header |
-| `GET /api/auth/google/login`    | Redirects to Google's consent screen                                | none (this _is_ the login)     |
-| `GET /api/auth/google/callback` | Verifies identity against the 2-email allowlist, issues session JWT | none (verifies itself)         |
-| `GET /api/months/{yyyy-mm}`     | Total, category breakdown, transaction list for one month           | session                        |
-| `GET /api/years/{yyyy}`         | Total, per-month totals, category breakdown for a year              | session                        |
-| `GET /api/ytd`                  | Same shape as `/years`, bounded at today                            | session                        |
-| `GET /api/categories`           | Category list (for chart legends/filters)                           | session                        |
-| `GET /api/health`               | Liveness check for the hosting provider                             | none                           |
+| Method + path                        | Purpose                                                                                                                               | Auth                           |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
+| `POST /telegram/webhook`             | Receives Telegram updates                                                                                                             | Telegram `secret_token` header |
+| `GET /api/auth/google/login`         | Redirects to Google's consent screen                                                                                                  | none (this _is_ the login)     |
+| `GET /api/auth/google/callback`      | Verifies identity against the 2-email allowlist, issues session JWT                                                                   | none (verifies itself)         |
+| `GET /api/months/{yyyy-mm}`          | Total, category breakdown, transaction list for one month                                                                             | session                        |
+| `GET /api/years/{yyyy}`              | Total, per-month totals, category breakdown for a year                                                                                | session                        |
+| `GET /api/ytd`                       | Same shape as `/years`, bounded at today                                                                                              | session                        |
+| `GET /api/categories`                | Category list (for chart legends/filters)                                                                                             | session                        |
+| `GET /api/months/{yyyy-mm}/analysis` | Cached Claude-written monthly analysis; generates + caches on first request (Phase 4C, [finance-frontend.md](finance-frontend.md) §9) | session                        |
+| `GET /api/health`                    | Liveness check for the hosting provider                                                                                               | none                           |
 
 All the `GET` endpoints return **pre-aggregated** JSON — sums and groupings
 computed in SQL/Python server-side, not raw rows for the frontend to crunch.
@@ -563,8 +569,16 @@ next one — that's the point, given the learning goal.
   reply and `/undo`/`/edit` (§4.3) in this same phase — they're part of the
   core loop, not an add-on.
 - **Phase 4B — Receipt photos.** Fast-follow once text parsing is solid
-  (§4.6): same pipeline, photo input instead of text, a line-items tool
-  schema instead of a single expense.
+  (§4.6): same pipeline and the same `record_expense` tool, photo input
+  instead of text — no separate line-items schema, per the decided
+  one-total-per-receipt scope.
+- **Phase 4C — Monthly Claude analysis endpoint.** Surfaced by the frontend
+  plan, not originally in this doc: `GET /api/months/{yyyy-mm}/analysis`,
+  a `monthly_analyses` table (month, text, generated_at), generated once
+  per month on first request and cached — see
+  [finance-frontend.md](finance-frontend.md) §9 for the full reasoning
+  (why not live/per-request, why a stronger model here than the Haiku-class
+  ingestion parser).
 - **Phase 5 — Auth.** Google OAuth login restricted to your two emails,
   session issuance (§6.5) — no password to hash. Still worth basic rate
   limiting on the callback endpoint as general hygiene, even without a
