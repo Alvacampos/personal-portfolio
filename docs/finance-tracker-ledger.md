@@ -19,23 +19,23 @@
 | Item                                         | Status | Notes                                                                    |
 | -------------------------------------------- | ------ | ------------------------------------------------------------------------ |
 | Backend investigation (`finance-tracker.md`) | done   | Investigation + roadmap, adversarial-reviewed, four open forks resolved. |
-| Frontend plan (`finance-frontend.md`)        | done   | Adversarial-reviewed; §11 has 3 remaining open forks.                    |
+| Frontend plan (`finance-frontend.md`)        | done   | Adversarial-reviewed; all 4 open forks resolved (§11).                   |
 | This ledger                                  | done   | Seeded with the decision history so far.                                 |
 
 ### Backend (separate repo — not yet created)
 
-| Phase                                         | Status | Notes                                                                                     |
-| --------------------------------------------- | ------ | ----------------------------------------------------------------------------------------- |
-| Phase 0 — Scaffolding                         | open   | Not started.                                                                              |
-| Phase 1 — Database & schema                   | open   | Blocked on Phase 0 only.                                                                  |
-| Phase 2 — Core read endpoints                 | open   |                                                                                           |
-| Phase 3 — Telegram plumbing                   | open   |                                                                                           |
-| Phase 4 — Claude integration                  | open   |                                                                                           |
-| Phase 4B — Receipt photos                     | open   | Fast-follow after Phase 4.                                                                |
-| Phase 4C — Monthly Claude analysis endpoint   | open   | Surfaced by the frontend plan §9 — not yet added to `finance-tracker.md`'s endpoint list. |
-| Phase 5 — Auth (Google OAuth)                 | open   |                                                                                           |
-| Phase 6 — Frontend integration (backend side) | open   |                                                                                           |
-| Phase 7 — Hardening                           | open   |                                                                                           |
+| Phase                                         | Status | Notes                                                                            |
+| --------------------------------------------- | ------ | -------------------------------------------------------------------------------- |
+| Phase 0 — Scaffolding                         | open   | Not started.                                                                     |
+| Phase 1 — Database & schema                   | open   | Blocked on Phase 0 only.                                                         |
+| Phase 2 — Core read endpoints                 | open   |                                                                                  |
+| Phase 3 — Telegram plumbing                   | open   |                                                                                  |
+| Phase 4 — Claude integration                  | open   |                                                                                  |
+| Phase 4B — Receipt photos                     | open   | Fast-follow after Phase 4.                                                       |
+| Phase 4C — Monthly Claude analysis endpoint   | open   | Surfaced by the frontend plan §9; both endpoints now in `finance-tracker.md` §7. |
+| Phase 5 — Auth (Google OAuth)                 | open   |                                                                                  |
+| Phase 6 — Frontend integration (backend side) | open   |                                                                                  |
+| Phase 7 — Hardening                           | open   |                                                                                  |
 
 ### Frontend (this repo, `/admin/*`)
 
@@ -46,13 +46,35 @@
 | Phase C — Auth + live integration       | open   | Blocked on backend Phase 5 existing for real, but the shell can be built against fixtures first. |
 | Phase D — Yearly view                   | open   |                                                                                                  |
 | Phase E — Claude analysis section       | open   | Blocked on backend Phase 4C.                                                                     |
-| Phase F — Vacations                     | open   | Planning-UI scope depends on frontend §11's open question.                                       |
+| Phase F — Vacations                     | open   | Planning UI deliberately deferred (wait-and-see, frontend §6) — list/detail view only for v1.    |
 
 ## Decision log
 
 Newest first. Each entry: what was decided or tried, and why — especially
 the "we tried X and backed out" entries, which are the ones worth having a
 record of.
+
+### 2026-09-25 — Frontend plan's four open forks resolved
+
+- **Charts use Recharts, not hand-rolled SVG** — reversing the original
+  plan below. The original reasoning (protect the size-limit budget,
+  practice hand-rolling) doesn't actually apply to a private, lazy-loaded
+  `/admin` section that isn't one of the project's stated learning goals.
+  Category list stays the primary accessible interaction regardless —
+  that decision didn't depend on which library draws the pie.
+- **"Regenerate analysis" gets a frontend button**, not a Telegram-only
+  command. The one deliberate exception to "no write UI in the frontend"
+  — it only recomputes a derived summary, it can't create or corrupt an
+  expense. `finance-tracker.md`'s non-goals list and endpoint table (§7)
+  now carry the carve-out and the new
+  `POST /api/months/{yyyy-mm}/analysis/regenerate` endpoint.
+- **Yearly same-months-last-year comparison is a fast-follow, not v1.**
+  Ship the single-year view first; add the second overlapping series once
+  that's proven out.
+- **Trip planning: schema now, UI wait-and-see.** `trips` gets `status` and
+  a nullable `budget` column now (cheap), but the planning UI itself waits
+  until a couple of trips have been tracked retrospectively — build it
+  once it's known to be wanted, not on the assumption it will be.
 
 ### 2026-09-25 — Frontend plan written and adversarially reviewed
 

@@ -13,11 +13,18 @@ Reuse this repo's real conventions — BEM CSS via `getClassMaker`, design
 tokens from `app/styles/constants.js`, `Card`/skeleton patterns, mobile-first
 CSS (confirmed already the house style: `app/styles/constants.js` literally
 says "Mobile-first min-width queries" — point 9 of the brief isn't a new
-constraint, it's just correctly applying what's already there), and **no new
-charting dependency** — this repo hand-rolls its one existing chart
-(`TenureHeatmap` is a CSS grid, not a library), and pie/bar charts are
-simple enough in raw SVG to keep that same minimal-dependency posture
-rather than pulling in a charting package for two chart types.
+constraint, it's just correctly applying what's already there).
+
+**Reconsidered after the first draft: charts use Recharts, not hand-rolled
+SVG.** The original reasoning leaned on this repo's `.size-limit.json`
+budget discipline, but that doesn't actually transfer here — those budgets
+protect the **public**, recruiter-facing Lighthouse score, and `/admin` is
+private, authenticated, and lazy-loaded the same way `TenureHeatmap` and
+`TechTree` already are for `/skills` — none of it touches the public
+routes' bundles. The other leg of the original reasoning ("hand-rolling is
+good practice") doesn't hold either: the frontend was explicitly scoped as
+work Claude does, not one of the stated Python/SQL/Claude-API learning
+goals this whole project exists for. See §7 for what Recharts buys.
 
 **Two places where copying convention literally would be wrong, not
 right**, caught by looking at what each convention is actually _for_:
@@ -99,7 +106,7 @@ This is the screen from the brief's point 5, worked through in order:
    (e.g. "▲ 8%"), since a number in isolation isn't very meaningful and
    this is a cheap, high-value addition Claude's analysis (below) can
    reference too.
-2. **Pie chart** (hand-rolled SVG, §7) — one arc per category.
+2. **Pie chart** (Recharts, §7) — one arc per category.
 3. **Category list below the chart** (not beside it, on mobile) — each row
    is tappable. Tapping a category **is** the filter (this is the same
    interaction as "grey out sections for a cleaner analysis" from the
@@ -133,15 +140,15 @@ silently).
 - Total for the year (ARS + USD-equivalent), category breakdown (same
   pie + list pattern as the month view — consistent interaction, not a
   new one to learn).
-- Month-by-month bar chart (hand-rolled SVG, §7) — this is also where the
+- Month-by-month bar chart (Recharts, §7) — this is also where the
   `TenureHeatmap`-style year × month grid idea from the backend doc's §6.3
   fits naturally, as a "spending intensity" alternative view.
-- Optional (nice-to-have, not blocking): a same-months-last-year comparison
-  — genuinely useful in Argentina's inflation context (the backend doc's
-  §10 caveat about ARS totals not being comparable month-to-month without
-  the USD-equivalent applies doubly here), but adds a second data fetch and
-  a legend explaining two overlapping series — worth having, not worth
-  blocking v1 on.
+- **Decided: same-months-last-year comparison is a fast-follow, not v1.**
+  Genuinely useful in Argentina's inflation context (the backend doc's §10
+  caveat about ARS totals not being comparable month-to-month without the
+  USD-equivalent applies doubly here) — but ship the simpler single-year
+  view first and add the second overlapping series once that's proven out,
+  rather than taking on the extra fetch and legend complexity from day one.
 - YTD is the same view, bounded at today instead of Dec 31 (per the
   backend's `/api/ytd`, same shape as `/years`).
 
@@ -158,44 +165,56 @@ possibly planning ahead — not just after-the-fact tracking.
   list pattern as the month view (deliberately consistent, not a new
   layout to learn), scoped to that trip's tagged expenses instead of a
   calendar month.
-- **"Maybe even plan them" is real scope, flagged as a stretch, not
-  dropped**: this implies a trip can exist _before_ any spending happens —
-  with a planned budget, and later a comparison of actual vs. planned. The
-  backend's `trips` table (finance-tracker.md §4.7) should get a `status`
-  (`planned` | `active` | `completed`) and a nullable `budget` column now,
-  even though the planning UI itself is a fast-follow — cheap to add to
-  the schema today, same "schema now, feature later" pattern already used
-  for currency and trips themselves in the backend doc.
+- **Decided: schema now, planning UI later, wait-and-see rather than
+  scheduled.** "Maybe even plan them" is real scope — a trip existing
+  _before_ any spending happens, with a planned budget and later a
+  comparison of actual vs. planned — but it's genuinely unknown yet
+  whether that's wanted in practice or just sounds useful in the abstract.
+  The backend's `trips` table (finance-tracker.md §4.7) gets a `status`
+  (`planned` | `active` | `completed`) and a nullable `budget` column now
+  regardless, since that's cheap (same "schema now, feature later" pattern
+  already used for currency and trips themselves). The planning **UI**
+  waits until a couple of trips have been tracked retrospectively first —
+  build it once you know you want it, not on the assumption you will.
 - No Claude analysis on the trip view for v1 (that's specifically a
   _monthly_ feature per the brief) — worth reconsidering once monthly
   analysis is proven out, not before.
 
 ---
 
-## 7. Charts: hand-rolled SVG, not a library
+## 7. Charts: Recharts
 
-A pie chart is a handful of `<path>` arcs computed from category totals; a
-bar chart is rectangles. Both are genuinely tractable without a dependency,
-and keep this project's demonstrated minimal-dependency posture (bare
-`fetch` instead of the Resend SDK, a hand-built heatmap instead of a chart
-library already) plus this repo's own size-limit budget discipline —
-pulling in a full charting package for two chart types would be a real,
-avoidable bundle-size cost.
+**Decided** (reconsidered from the original hand-rolled-SVG plan, see §1):
+[Recharts](https://recharts.org/). SVG-based, not canvas — canvas charts
+(e.g. Chart.js) make individual slices/bars harder to expose to screen
+readers, which matters given this repo's existing accessibility bar (§10).
+React-idiomatic, handles animation, tooltips, legends, and responsive
+sizing without building any of that by hand. Added as a real dependency
+once Phase B (§12) actually starts, not before — this doc records the
+decision, it doesn't install the package.
 
-- **Pie/donut** (month + trip category breakdown): one arc per category,
-  colored from the existing design-token palette (extend it with a
-  category color mapping, don't invent a second palette).
-- **Bar** (yearly month-by-month totals): one rect per month, height scaled
-  to the max.
-- Both live as small, focused, testable components
-  (`app/components/PieChart/`, `app/components/BarChart/`) following the
-  existing component pattern (§14 of `AGENTS.md`) — colocated `style.css`,
-  `index.test.tsx`, `index.stories.tsx`.
-
-If hand-rolling the arc math turns out to be more annoying in practice than
-expected, the fallback is a single small, tree-shakeable primitive (not a
-full charting suite) — worth deciding with real code in hand, not in
-advance.
+- **Pie chart** (month + trip category breakdown): Recharts' `PieChart` +
+  `Pie`, colored from the existing design-token palette extended with a
+  category color mapping (don't invent a second palette). The
+  isolate-a-category interaction (§4, §8) is Recharts' `activeIndex` /
+  per-slice `onClick`, dimming inactive slices via `fillOpacity` rather
+  than hand-computing which arc got clicked.
+- **Bar chart** (yearly month-by-month totals): Recharts' `BarChart` + `Bar`.
+- **The category list stays the primary interaction, not the chart
+  itself** (§3, §10) — that decision doesn't change just because the chart
+  is now a library. It was originally driven by mobile touch-target size
+  and keyboard/screen-reader access, both still true regardless of what
+  renders the pie. Recharts' own accessibility isn't perfect by default
+  (it renders fine as SVG but doesn't automatically wire up ARIA labels
+  per slice) — the list remains the accessible source of truth; the chart
+  is `aria-hidden`, same as originally planned.
+- Both live as thin wrapper components
+  (`app/components/PieChart/`, `app/components/BarChart/`) around the
+  Recharts primitives, following the existing component pattern (§14 of
+  `AGENTS.md`) — colocated `style.css`, `index.test.tsx`,
+  `index.stories.tsx` — rather than reaching for Recharts components
+  directly from page code, so the rest of the app doesn't need to know
+  which charting library is behind the wrapper.
 
 ---
 
@@ -241,22 +260,30 @@ settle, is _when the analysis text gets generated and by what_:
   call. Still cheap at "once a month," but it's not the same
   near-zero-cost category as per-message parsing, and shouldn't be assumed
   to be.
-- **A real tension worth surfacing, not quietly resolving**: a
-  "regenerate analysis" button is the one plausible write action on an
-  otherwise read-only frontend, directly bumping into the backend doc's
-  stated non-goal ("any write UI in the frontend"). Two honest ways to
-  resolve it, not decided here — see §9's open question below.
+- **Decided: yes, a "Regenerate" button on the frontend** — the one
+  deliberate, narrow exception to the site's read-only principle. It's a
+  meaningfully different risk category from editing a financial record:
+  it only recomputes a derived summary from data that already exists, it
+  can't corrupt or fabricate an expense, and it's a much better experience
+  than switching to Telegram to type a command for something this minor.
+  `finance-tracker.md`'s non-goals list needs a one-line carve-out added
+  for this, so the two docs don't contradict each other. Needs a second
+  new backend endpoint beyond the read one below:
+  `POST /api/months/{yyyy-mm}/analysis/regenerate` — session-gated like
+  every other admin endpoint, since this is the one place a bug or an
+  unlocked phone could rack up avoidable Claude calls if it weren't.
 - **Mid-month handling**: viewing the _current_, still-incomplete month
   and showing "you're overspending on X!" from thirteen days of data
   would be misleading. Recommendation: only auto-generate the analysis
   once a month has fully elapsed; the current month's analysis slot shows
   "available once the month ends" instead of forcing a premature summary.
+  The regenerate button only makes sense on already-elapsed months for the
+  same reason.
 
-**Backend doc cross-reference**: `finance-tracker.md` needs a new
-`GET /api/months/{yyyy-mm}/analysis` endpoint added to its §7 table and a
-`monthly_analyses` table noted alongside its schema discussion — tracked in
-the ledger, not yet applied, since it's this document's job to surface it
-and the backend doc's job to own the actual endpoint list.
+**Backend doc cross-reference**: `finance-tracker.md` §7 already has
+`GET /api/months/{yyyy-mm}/analysis` (added in the previous revision) — it
+still needs the new `POST .../regenerate` endpoint above, plus the
+non-goals carve-out mentioned there.
 
 ---
 
@@ -278,21 +305,16 @@ bar, not a lower private-app-nobody-else-sees one:
 
 ---
 
-## 11. Open questions (genuine either-way decisions from this review)
+## 11. Open questions
 
-- **Does "regenerate analysis" get a frontend button, or stay
-  Telegram-only** (e.g. `/analyze september`, consistent with "all writes
-  go through chat")? A button is more convenient for something this
-  low-risk (it recomputes a derived summary, it doesn't touch financial
-  records) but is a genuine, if narrow, exception to a stated principle.
-- **Comparison-to-last-year on the yearly view**: worth the second data
-  fetch and legend complexity for v1, or a clean fast-follow once the
-  single-year view is proven out?
-- **Trip planning** (§6): build the `status`/`budget` schema fields now
-  (cheap) but is the planning _UI_ itself worth scoping into an early
-  phase, or should it wait until after a couple of trips have been
-  tracked retrospectively first, to see if planning is actually wanted in
-  practice rather than assumed?
+All four forks raised by this review are resolved — see
+[finance-tracker-ledger.md](finance-tracker-ledger.md) for the dated log
+entry, and the sections below for the reasoning behind each: charts use
+Recharts (§1, §7), the monthly analysis gets a frontend "Regenerate"
+button (§9), the yearly last-year comparison is a fast-follow not v1 (§5),
+and trip planning is schema-now / UI-wait-and-see (§6). No open forks
+remain in this doc; new ones that come up during implementation get added
+here rather than decided silently.
 
 ---
 

@@ -55,7 +55,11 @@ you're trying to practice, since that's the reason this project exists.
   month for v1). Cheap fast-follow once the core loop is proven — see §9.
 - Any write UI in the frontend — corrections happen via Telegram (§4.3), not
   a form on the site. This keeps the frontend genuinely read-only, per your
-  original spec.
+  original spec. **One narrow exception**: a "Regenerate analysis" button
+  on the monthly view ([finance-frontend.md](finance-frontend.md) §9) — it
+  only recomputes a derived summary from data that already exists, can't
+  create or alter an expense, and isn't a workaround for the frontend
+  editing financial records.
 - Migrating the CV's own data into this backend (see table above).
 
 **No longer non-goals**, promoted into the plan by the adversarial review:
@@ -321,6 +325,11 @@ schema decision that's much cheaper to bake in early than retrofit:
 - A `trips` table (`id`, `name`, `start_date`, `end_date`) and a nullable
   `trip_id` on `expenses`. `NULL` = ordinary monthly expense; tagged =
   counted toward that trip instead.
+- Also add `status` (`planned` | `active` | `completed`) and a nullable
+  `budget` column to `trips` now, even though the trip-**planning** UI
+  itself is a later wait-and-see fast-follow, not v1
+  ([finance-frontend.md](finance-frontend.md) §6) — cheap to bake into the
+  schema today, same reasoning as the rest of this section.
 - Month/year views **exclude** trip-tagged expenses from the normal running
   totals by default (a vacation shouldn't make it look like you blew the
   monthly grocery budget) — with trips shown as their own separate view.
@@ -486,17 +495,18 @@ it's the one actually doing the work on the write side.
 
 ## 7. Endpoints (concrete v1 list)
 
-| Method + path                        | Purpose                                                                                                                               | Auth                           |
-| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
-| `POST /telegram/webhook`             | Receives Telegram updates                                                                                                             | Telegram `secret_token` header |
-| `GET /api/auth/google/login`         | Redirects to Google's consent screen                                                                                                  | none (this _is_ the login)     |
-| `GET /api/auth/google/callback`      | Verifies identity against the 2-email allowlist, issues session JWT                                                                   | none (verifies itself)         |
-| `GET /api/months/{yyyy-mm}`          | Total, category breakdown, transaction list for one month                                                                             | session                        |
-| `GET /api/years/{yyyy}`              | Total, per-month totals, category breakdown for a year                                                                                | session                        |
-| `GET /api/ytd`                       | Same shape as `/years`, bounded at today                                                                                              | session                        |
-| `GET /api/categories`                | Category list (for chart legends/filters)                                                                                             | session                        |
-| `GET /api/months/{yyyy-mm}/analysis` | Cached Claude-written monthly analysis; generates + caches on first request (Phase 4C, [finance-frontend.md](finance-frontend.md) §9) | session                        |
-| `GET /api/health`                    | Liveness check for the hosting provider                                                                                               | none                           |
+| Method + path                                    | Purpose                                                                                                                                                                                          | Auth                           |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------ |
+| `POST /telegram/webhook`                         | Receives Telegram updates                                                                                                                                                                        | Telegram `secret_token` header |
+| `GET /api/auth/google/login`                     | Redirects to Google's consent screen                                                                                                                                                             | none (this _is_ the login)     |
+| `GET /api/auth/google/callback`                  | Verifies identity against the 2-email allowlist, issues session JWT                                                                                                                              | none (verifies itself)         |
+| `GET /api/months/{yyyy-mm}`                      | Total, category breakdown, transaction list for one month                                                                                                                                        | session                        |
+| `GET /api/years/{yyyy}`                          | Total, per-month totals, category breakdown for a year                                                                                                                                           | session                        |
+| `GET /api/ytd`                                   | Same shape as `/years`, bounded at today                                                                                                                                                         | session                        |
+| `GET /api/categories`                            | Category list (for chart legends/filters)                                                                                                                                                        | session                        |
+| `GET /api/months/{yyyy-mm}/analysis`             | Cached Claude-written monthly analysis; generates + caches on first request (Phase 4C, [finance-frontend.md](finance-frontend.md) §9)                                                            | session                        |
+| `POST /api/months/{yyyy-mm}/analysis/regenerate` | Forces a fresh analysis, overwriting the cached copy — backs the frontend's "Regenerate" button (Phase 4C, [finance-frontend.md](finance-frontend.md) §9); only valid for already-elapsed months | session                        |
+| `GET /api/health`                                | Liveness check for the hosting provider                                                                                                                                                          | none                           |
 
 All the `GET` endpoints return **pre-aggregated** JSON — sums and groupings
 computed in SQL/Python server-side, not raw rows for the frontend to crunch.
@@ -575,10 +585,12 @@ next one — that's the point, given the learning goal.
 - **Phase 4C — Monthly Claude analysis endpoint.** Surfaced by the frontend
   plan, not originally in this doc: `GET /api/months/{yyyy-mm}/analysis`,
   a `monthly_analyses` table (month, text, generated_at), generated once
-  per month on first request and cached — see
-  [finance-frontend.md](finance-frontend.md) §9 for the full reasoning
-  (why not live/per-request, why a stronger model here than the Haiku-class
-  ingestion parser).
+  per month on first request and cached, plus
+  `POST /api/months/{yyyy-mm}/analysis/regenerate` to back the frontend's
+  "Regenerate" button — see [finance-frontend.md](finance-frontend.md) §9
+  for the full reasoning (why not live/per-request, why a stronger model
+  here than the Haiku-class ingestion parser, why a regenerate button is
+  the one deliberate exception to the frontend's read-only principle).
 - **Phase 5 — Auth.** Google OAuth login restricted to your two emails,
   session issuance (§6.5) — no password to hash. Still worth basic rate
   limiting on the callback endpoint as general hygiene, even without a
