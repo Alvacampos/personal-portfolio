@@ -10,9 +10,10 @@
 > real gaps were found (Claude could loop on its own confirmation messages;
 > the schema had no currency field despite ARS/USD being a stated
 > requirement; corrections were wrongly deferred as optional) and are fixed
-> inline below, not just listed as findings. A few genuine either-way
-> decisions came out of it too — flagged as open questions in §10, not
-> silently decided.
+> inline below, not just listed as findings. Four genuine either-way
+> decisions came out of it too (Telegram group scope, admin login
+> mechanism, USD reference rate, receipt granularity) — asked rather than
+> assumed, and answered; see the "Decided already" table just below.
 
 ## 1. What this is
 
@@ -29,12 +30,15 @@ you're trying to practice, since that's the reason this project exists.
 
 ### Decided already (from the kickoff conversation)
 
-| Decision          | Choice                      | Why                                                                                                                                                                                                                                                                                                                                                                  |
-| ----------------- | --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Messaging channel | **Telegram**, not WhatsApp  | Telegram's Bot API is official, free, and reads group messages natively. WhatsApp's official Cloud API doesn't reliably support reading group chats — only unofficial, ToS-violating libraries do (see §4.1).                                                                                                                                                        |
-| CV data           | **Stays exactly as-is**     | The current static-JSON, edge-cached setup (§9 of `AGENTS.md`) is deliberately tuned to be fast and free with zero external calls. Migrating it into a new backend would add latency, cost, and a new failure mode to a page that needs none of that. Finance is a fully separate system that happens to share your Cloudflare account and (optionally) a subdomain. |
-| Hosting budget    | **Free tier only**, for now | Achievable end-to-end (§8). Trade-off is cold-start latency after idle — fine for a tool checked a few times a month.                                                                                                                                                                                                                                                |
-| Admin login       | **One shared password**     | Simplest option for two trusted people. Still gets hashed + sessioned properly (§6.5) — "simple" isn't an excuse to skip the basics.                                                                                                                                                                                                                                 |
+| Decision            | Choice                                              | Why                                                                                                                                                                                                                                                                                                                                                                  |
+| ------------------- | --------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Messaging channel   | **Telegram**, not WhatsApp                          | Telegram's Bot API is official, free, and reads group messages natively. WhatsApp's official Cloud API doesn't reliably support reading group chats — only unofficial, ToS-violating libraries do (see §4.1).                                                                                                                                                        |
+| CV data             | **Stays exactly as-is**                             | The current static-JSON, edge-cached setup (§9 of `AGENTS.md`) is deliberately tuned to be fast and free with zero external calls. Migrating it into a new backend would add latency, cost, and a new failure mode to a page that needs none of that. Finance is a fully separate system that happens to share your Cloudflare account and (optionally) a subdomain. |
+| Hosting budget      | **Free tier only**, for now                         | Achievable end-to-end (§8). Trade-off is cold-start latency after idle — fine for a tool checked a few times a month.                                                                                                                                                                                                                                                |
+| Admin login         | **Google sign-in**, restricted to your two emails   | Reconsidered from the original shared-password plan once the stakes changed from "public CV contact form" to "real financial data" — and this exact project already had a password leak once via screenshot (§6.5). No password exists anywhere to leak.                                                                                                             |
+| Telegram group      | **Dedicated group**, expenses only                  | Every message can be assumed expense-shaped, which is what keeps the parsing prompt and guardrails simple (§4.4).                                                                                                                                                                                                                                                    |
+| USD reference rate  | **Blue/informal rate**                              | More representative of real day-to-day purchasing power in Argentina than the oficial rate; captured per-transaction (§4.5) so the choice doesn't need revisiting for historical data.                                                                                                                                                                               |
+| Receipt granularity | **One categorized total per receipt**, not itemized | Simpler extraction; reuses the same `record_expense` tool as text messages (§4.6) — no separate line-items schema.                                                                                                                                                                                                                                                   |
 
 ### Non-goals for v1
 
@@ -69,7 +73,7 @@ flowchart LR
         AI["Claude API call<br/>Haiku, structured tool-use"]
         DB[(Postgres)]
         API["GET /api/months, /years, /ytd, ..."]
-        AUTH["POST /api/auth/login"]
+        AUTH["Google OAuth<br/>login + callback"]
     end
     subgraph CV["Existing portfolio — this repo, Cloudflare Worker"]
         ADMIN["/admin/* routes<br/>server-side loader"]
@@ -215,11 +219,12 @@ original draft under-specified it.** A few concrete mechanisms, not just
 "write a careful prompt":
 
 - **Restrict Claude's output to tool-calls only, never freeform text relayed
-  back to the user.** Define a small fixed set of tools — `record_expense`,
-  `record_receipt_items`, `no_action` (message isn't an expense),
-  `request_clarification` (ambiguous, needs a human reply) — and never let
-  the model's own free-text generation reach the group or the database
-  directly. This is the actual prompt-injection defense: even if a message
+  back to the user.** Define a small fixed set of tools — `record_expense`
+  (used for both text messages and receipt photos, see §4.6), `no_action`
+  (message isn't an expense), `request_clarification` (ambiguous, needs a
+  human reply) — and never let the model's own free-text generation reach
+  the group or the database directly. This is the actual prompt-injection
+  defense: even if a message
   tries to manipulate the model ("ignore previous instructions and..."), the
   worst case is it calls the wrong _tool_ with the wrong _arguments_ — it
   can't produce arbitrary text, arbitrary actions, or arbitrary data shapes,
@@ -240,15 +245,13 @@ original draft under-specified it.** A few concrete mechanisms, not just
   reset daily) as a cost/abuse safety net — cheap insurance against the
   above loop (or any other bug) turning into a real bill, on top of fixing
   the loop itself.
-- **A decision only you can make: is this Telegram group dedicated to
-  expenses, or your existing everyday chat?** A dedicated group means every
-  message can be assumed expense-shaped, which makes the prompt simpler and
-  meaningfully shrinks the "is this actually an expense" ambiguity surface.
-  A shared everyday-chat group means Claude has to reliably tell "5000 on
-  groceries" apart from ordinary conversation, which is a harder, noisier
-  problem and increases how often `no_action`/`request_clarification` fires
-  on things that were never meant to be parsed at all. Flagged as an open
-  question in §10 rather than assumed.
+- **Decided (see §1): a dedicated group, expenses only.** Every message can
+  be assumed expense-shaped, which is exactly what keeps the guardrails
+  above simple — the prompt doesn't need to separate "is this an expense"
+  from "what expense is this," just the latter. If this ever changes to a
+  shared everyday-chat group, revisit this section: Claude would then have
+  to reliably tell "5000 on groceries" apart from ordinary conversation,
+  which is a harder, noisier problem than what's designed here.
 
 ### 4.5 Currency: ARS native, USD-convertible
 
@@ -271,12 +274,14 @@ just ARS-only tracking. Two distinct needs, both handled by the same design:
    figures stay accurate without needing to reconstruct rates later.
    Month/year views then return both a native-currency total and a
    USD-equivalent total.
-3. **Open question, not a technical one**: Argentina has multiple
-   real-world USD rates at once (oficial, blue/informal, MEP) that can
-   differ substantially, and "the" USD value of a peso amount depends on
-   which one you mean. There's no universally correct choice here — flagged
-   in §10 rather than assumed. A free rate source exists either way (e.g.
-   `dolarapi.com`, `bluelytics.com.ar` for Argentina-specific rates).
+3. **Decided (see §1): the blue/informal rate**, not oficial or MEP — chosen
+   as more representative of real day-to-day purchasing power in Argentina.
+   Both `dolarapi.com` and `bluelytics.com.ar` expose a `blue`-specific
+   endpoint for free with no API key needed for basic use; confirm current
+   terms at Phase 1. Since the rate is captured per-transaction at ingestion
+   time (point 2 above), this choice never needs revisiting for historical
+   data even if a different rate seems more useful later — only new entries
+   would use a changed methodology.
 
 ### 4.6 Receipt photos (fast-follow, not v1.0)
 
@@ -288,18 +293,19 @@ message type, downloaded via `getFile`) — no platform blocker either.
 It's deliberately **not** bundled into Phase 4 (text parsing is already a
 full phase on its own), but it reuses the exact same
 webhook → Claude → Postgres pipeline, just swapping the input type from text
-to image and the tool schema from one expense to a list of line items — so
-it's a natural "Phase 4B" (§9) right after text parsing is solid, not a
-someday/maybe. Vision calls cost more per request than text-only, but at
-"a few receipts a week" volume that stays well within "check the real number
-via the `claude-api` skill, don't worry about it" territory.
+to image — so it's a natural "Phase 4B" (§9) right after text parsing is
+solid, not a someday/maybe. Vision calls cost more per request than
+text-only, but at "a few receipts a week" volume that stays well within
+"check the real number via the `claude-api` skill, don't worry about it"
+territory.
 
-**Open question, not a technical one**: do you want per-item line breakdown
-per receipt (e.g. splitting one supermarket trip into produce / cleaning
-supplies / snacks), or is a single auto-categorized total per receipt
-enough? The latter is simpler and may be all you actually want — a text
-message ("5000 super") already achieves that in one line, faster than
-photographing and waiting on a parse. Flagged in §10.
+**Decided (see §1): one categorized total per receipt**, not itemized per
+product. This is meaningfully simpler than it could have been — it means a
+receipt photo calls the exact same `record_expense` tool a text message
+does (§4.4), just with an image as the input instead of typed text. No
+separate line-items schema, no per-product category-splitting logic to get
+right. If finer-grained category data ever turns out to matter, itemization
+is a well-scoped later addition, not a redesign.
 
 ### 4.7 Trips / vacations (future section, designed now)
 
@@ -367,12 +373,12 @@ Tooling choices, matching the learning goal:
 
 ### 6.1 Routes (flat-route convention, matching existing `app/routes/`)
 
-| Route                                           | Purpose                                               |
-| ----------------------------------------------- | ----------------------------------------------------- |
-| `admin._index/` → `/admin`                      | Login form                                            |
-| `admin.dashboard/` → `/admin/dashboard`         | Current month view (default landing page after login) |
-| `admin.month.$yyyyMm/` → `/admin/month/:yyyyMm` | A specific month                                      |
-| `admin.year.$year/` → `/admin/year/:year`       | Yearly review for a given year                        |
+| Route                                           | Purpose                                                     |
+| ----------------------------------------------- | ----------------------------------------------------------- |
+| `admin._index/` → `/admin`                      | Login page — "Sign in with Google" button, no password form |
+| `admin.dashboard/` → `/admin/dashboard`         | Current month view (default landing page after login)       |
+| `admin.month.$yyyyMm/` → `/admin/month/:yyyyMm` | A specific month                                            |
+| `admin.year.$year/` → `/admin/year/:year`       | Yearly review for a given year                              |
 
 ### 6.2 Data flow
 
@@ -401,44 +407,52 @@ exact "loader fetches, component renders" shape the whole site already uses.
   on admin responses in `workers/app.ts`, matching the existing pattern
   already used for `.data` endpoints in this file.
 
-### 6.5 Auth (shared password) — and a reconsideration
+### 6.5 Auth: Google sign-in, restricted to two emails
 
-- Backend hashes the one shared password (e.g. `passlib`/`bcrypt`) — even
-  for two people, a password is never stored in plaintext, no exceptions.
-- `POST /api/auth/login` checks the password, issues a signed session token
-  (JWT, short-lived, HS256 with a shared secret), and is **rate-limited from
-  the moment it exists** (Phase 5, not deferred to Phase 7's general
-  hardening pass) — a shared password with an unlimited-attempt login
-  endpoint is brute-forceable, and this is real financial data, not a public
-  CV's contact form.
-- The Worker can **verify the JWT's signature locally** (same secret,
-  no network round-trip) before even calling the backend for data — cheap,
-  and keeps the admin-gate check fast.
+Decided (see §1) over the originally-planned shared password, specifically
+because this gates real financial data rather than a public CV's contact
+form — and because a password already leaked once via screenshot earlier in
+this exact project (the Turnstile setup). Google sign-in means there's no
+password anywhere to leak in the first place, for either of you.
+
+- Standard OAuth 2.0 "Sign in with Google" flow: the backend redirects to
+  Google's consent screen; Google calls back with an auth code; the backend
+  exchanges it for the visitor's verified email address.
+- **The entire access control is an allowlist of exactly two email
+  addresses.** Anyone with any Google account can complete the OAuth flow
+  itself — the allowlist check happens _after_, before a session is ever
+  issued. Reject there, not later.
+- On success, the backend issues its own short-lived session token (JWT,
+  HS256, shared secret) — Google only needs to prove identity once; it
+  doesn't stay involved in ordinary API calls afterward.
+- The Worker still **verifies the JWT's signature locally** (same secret,
+  no network round-trip) before calling the backend for data — cheap, and
+  keeps the admin-gate check fast.
 - Session cookie: `HttpOnly`, `Secure`, `SameSite=Lax`, similar to the
   `locale` cookie already set by `LocaleToggle`.
 - On the backend itself: apply the auth check as a **default-deny
   dependency on the whole router**, with an explicit allowlist for the few
-  routes that must stay open (`/telegram/webhook`, `/api/auth/login`,
-  `/api/health`) — rather than opting individual routes into auth one at a
-  time, where forgetting one is a real and common way FastAPI apps leak
-  data.
+  routes that must stay open (`/telegram/webhook`,
+  `/api/auth/google/login`, `/api/auth/google/callback`, `/api/health`) —
+  rather than opting individual routes into auth one at a time, where
+  forgetting one is a real and common way FastAPI apps leak data. This
+  matters regardless of the auth mechanism, but especially once there's no
+  password acting as an obvious "this route needs protecting" reminder.
 
-> **Worth reconsidering, not just noting:** the shared-password decision was
-> made in the context of "keep the CV's contact form simple." Financial data
-> for two people is a different stakes profile, and this exact project
-> already had a real password get exposed once via a screenshot during the
-> Turnstile setup earlier — a timely reminder that a password living in a
-> chat transcript or a screenshot is a real failure mode, not a hypothetical
-> one. Google sign-in restricted to your two email addresses removes the
-> "a password exists somewhere to leak" problem entirely, at the cost of
-> building an OAuth flow instead of a login form. Re-asked as an open
-> question in §10 rather than left as settled.
->
-> **Separately, also worth knowing:** Cloudflare Access (part of Zero Trust,
-> free for small user counts) could gate the whole thing with email-based
-> one-time-PIN login restricted to your two addresses, with zero custom auth
-> code — either as the primary mechanism instead of the above, or as a free
-> extra layer in front of whichever one you pick.
+No password to hash, no login-brute-force surface, no `passlib`/`bcrypt`
+dependency — this removes a category of risk rather than relocating it.
+Basic rate limiting on the callback endpoint is still sensible general
+hygiene (abuse/cost protection), but the _specific_ threat that originally
+justified "rate-limit this from day one" — a guessable shared password —
+no longer exists.
+
+> **Worth knowing as an alternative implementation, not a different
+> decision:** Cloudflare Access (Zero Trust, free for small user counts)
+> can enforce this exact "restrict to two emails" outcome with zero custom
+> OAuth code, using Google (or several other providers, or email one-time-
+> PIN) as the identity check. Same result, less code to write yourself —
+> worth comparing at Phase 5 purely as a build-it-yourself-for-the-learning
+> vs. use-the-managed-thing trade-off, not as a reopened decision.
 
 ### 6.6 The real write-boundary is "who's in the Telegram group"
 
@@ -467,15 +481,16 @@ it's the one actually doing the work on the write side.
 
 ## 7. Endpoints (concrete v1 list)
 
-| Method + path               | Purpose                                                   | Auth                           |
-| --------------------------- | --------------------------------------------------------- | ------------------------------ |
-| `POST /telegram/webhook`    | Receives Telegram updates                                 | Telegram `secret_token` header |
-| `POST /api/auth/login`      | Password → session JWT                                    | none (this _is_ the login)     |
-| `GET /api/months/{yyyy-mm}` | Total, category breakdown, transaction list for one month | session                        |
-| `GET /api/years/{yyyy}`     | Total, per-month totals, category breakdown for a year    | session                        |
-| `GET /api/ytd`              | Same shape as `/years`, bounded at today                  | session                        |
-| `GET /api/categories`       | Category list (for chart legends/filters)                 | session                        |
-| `GET /api/health`           | Liveness check for the hosting provider                   | none                           |
+| Method + path                   | Purpose                                                             | Auth                           |
+| ------------------------------- | ------------------------------------------------------------------- | ------------------------------ |
+| `POST /telegram/webhook`        | Receives Telegram updates                                           | Telegram `secret_token` header |
+| `GET /api/auth/google/login`    | Redirects to Google's consent screen                                | none (this _is_ the login)     |
+| `GET /api/auth/google/callback` | Verifies identity against the 2-email allowlist, issues session JWT | none (verifies itself)         |
+| `GET /api/months/{yyyy-mm}`     | Total, category breakdown, transaction list for one month           | session                        |
+| `GET /api/years/{yyyy}`         | Total, per-month totals, category breakdown for a year              | session                        |
+| `GET /api/ytd`                  | Same shape as `/years`, bounded at today                            | session                        |
+| `GET /api/categories`           | Category list (for chart legends/filters)                           | session                        |
+| `GET /api/health`               | Liveness check for the hosting provider                             | none                           |
 
 All the `GET` endpoints return **pre-aggregated** JSON — sums and groupings
 computed in SQL/Python server-side, not raw rows for the frontend to crunch.
@@ -550,9 +565,10 @@ next one — that's the point, given the learning goal.
 - **Phase 4B — Receipt photos.** Fast-follow once text parsing is solid
   (§4.6): same pipeline, photo input instead of text, a line-items tool
   schema instead of a single expense.
-- **Phase 5 — Auth.** Shared-password (or reconsidered alternative, see
-  §10) login, hashing, session issuance, **and rate limiting on the login
-  endpoint from the start** (§6.5) — not deferred to Phase 7.
+- **Phase 5 — Auth.** Google OAuth login restricted to your two emails,
+  session issuance (§6.5) — no password to hash. Still worth basic rate
+  limiting on the callback endpoint as general hygiene, even without a
+  brute-forceable password behind it.
 - **Phase 6 — Frontend admin UI (this repo).** Add the `/admin/*` routes,
   wire loaders to the now-real backend, build the month/year/YTD views.
 - **Phase 7 — Hardening.** Remaining rate limiting on the backend
@@ -571,27 +587,11 @@ it ever shows up.
 
 ## 10. Open questions
 
-### Genuine either-way decisions (surfaced by the adversarial review)
-
-These change the design meaningfully in either direction — worth an actual
-answer rather than a default:
-
-- **Dedicated Telegram group, or your existing everyday chat?** (§4.4) A
-  dedicated group makes "is this an expense" unambiguous and shrinks the
-  guardrail surface; a shared group means Claude has to reliably separate
-  expenses from ordinary conversation.
-- **Shared password, or reconsider Google sign-in restricted to your two
-  emails?** (§6.5) The original answer was shared password, chosen for a
-  low-stakes contact-form context — worth a second look now that it's
-  gating real financial data, especially given a password already leaked
-  once via screenshot earlier in this exact project.
-- **Which USD reference rate for conversions — oficial, blue/informal, or
-  MEP?** (§4.5) No universally correct answer in Argentina's multi-rate
-  reality; whichever is picked gets stored per-transaction so the choice
-  doesn't need revisiting later.
-- **Receipt photos: per-item breakdown, or one categorized total per
-  receipt?** (§4.6) Changes both the tool schema and how much the prompt
-  has to get right per photo.
+The four genuine either-way decisions the adversarial review surfaced
+(Telegram group scope, admin login mechanism, USD reference rate, receipt
+granularity) have all been answered — see the "Decided already" table in
+§1, and §4.4/§4.5/§4.6/§6.5 for where each one's reasoning lives. What's
+left below are smaller items, deliberately deferred rather than blocking.
 
 ### Smaller, deliberately deferred to Phase 0/1
 
