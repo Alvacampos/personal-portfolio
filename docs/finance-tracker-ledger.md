@@ -54,6 +54,26 @@ Newest first. Each entry: what was decided or tried, and why — especially
 the "we tried X and backed out" entries, which are the ones worth having a
 record of.
 
+### 2026-09-26 — PR #332 adversarially reviewed: a real a11y gap + a stale comment
+
+Reviewed the pushed diff fresh. Two more findings:
+
+- **Real accessibility gap**: the pie chart has the category list as its
+  accessible source of truth, but the bar chart's month-by-month data had
+  no equivalent anywhere — a screen reader user got the "Month by month"
+  heading and then nothing, since the chart itself is `aria-hidden`.
+  Added a visually-hidden list (same technique as `Input`'s `__label`)
+  with the actual month/total pairs, plus a test asserting the content
+  is genuinely attached — axe wouldn't have flagged the _absence_ of
+  content, only violations in what's present, so this needed its own
+  check, not just a passing a11y gate.
+- On a second pass over the same diff: `BarChart`'s own doc comment
+  claimed "the month-by-month totals are already visible as plain
+  numbers wherever this chart is used" — the exact false assumption the
+  fix above just disproved. Corrected the comment to state the real
+  contract (this component provides no fallback of its own; the
+  consumer is responsible for one) instead of leaving it actively wrong.
+
 ### 2026-09-26 — Phase D shipped: yearly view (bar chart + same isolate pattern)
 
 - Extracted `app/utils/use-category-isolation.ts` out of the month
