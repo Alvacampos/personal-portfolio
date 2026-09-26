@@ -54,6 +54,25 @@ Newest first. Each entry: what was decided or tried, and why — especially
 the "we tried X and backed out" entries, which are the ones worth having a
 record of.
 
+### 2026-09-26 — PR #331 adversarially reviewed: two more real findings
+
+Reviewed the pushed diff fresh (not the build-time findings above, which
+were already fixed before the first push). Two more:
+
+- The a11y route loop only ever does goto-and-scan — the new isolated-
+  category markup (`aria-pressed`, the active row's background/border)
+  had never actually been rendered when axe ran against it, so it was
+  "probably fine by analogy to Card's existing bg-elevated usage" rather
+  than actually checked. Added a one-off test that clicks a category
+  first, then scans — passed, confirming the analogy, but confirmed
+  rather than assumed.
+- The transaction list would render silently empty if an isolated
+  category ever had zero matching transactions. Not reachable with
+  today's fixtures (a category only appears in the list if it has at
+  least one transaction), but a real backend response is the first thing
+  that gets to disagree with that assumption — added a defensive empty
+  state.
+
 ### 2026-09-26 — Phase B shipped: Recharts pie chart + category isolate/filter
 
 - Installed `recharts` (real prod dependency, React 19-compatible). Built
