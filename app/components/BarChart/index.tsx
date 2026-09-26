@@ -29,8 +29,11 @@ function formatMonthTick(yyyyMm: string): string {
 // there's no per-category breakdown at this granularity
 // (docs/finance-tracker-backend-kickoff.md §6.1's YearResponse has no
 // per-month-per-category figure), so this never responds to category
-// isolation. The month-by-month totals are already visible as plain
-// numbers wherever this chart is used; screen readers don't need it.
+// isolation. Unlike PieChart, this component has no accessible fallback
+// of its own (no category-list equivalent to point to) — whoever renders
+// it is responsible for providing one alongside it, the way the yearly
+// view's visually-hidden month/total list does
+// (app/routes/admin.year.$year/index.tsx).
 export default function BarChart({ data }: BarChartProps) {
   return (
     <div className={getClasses()} aria-hidden="true">
