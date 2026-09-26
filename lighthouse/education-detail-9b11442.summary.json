@@ -1,34 +1,34 @@
 {
-  "fetchTime": "2026-09-26T22:29:12.919Z",
-  "requestedUrl": "https://gonzalo-alvarez-campos-cv.com/skills",
-  "finalUrl": "https://gonzalo-alvarez-campos-cv.com/skills",
+  "fetchTime": "2026-09-26T22:42:49.267Z",
+  "requestedUrl": "https://gonzalo-alvarez-campos-cv.com/education/degree",
+  "finalUrl": "https://gonzalo-alvarez-campos-cv.com/education/degree",
   "lighthouseVersion": "13.4.1",
-  "commit": "2a35fbd",
+  "commit": "9b11442",
   "categories": {
-    "performance": 0.94,
+    "performance": 0.92,
     "accessibility": 1,
     "best-practices": 1,
     "seo": 1
   },
   "metrics": {
     "fcp": {
-      "displayValue": "2.2 s",
-      "numericValue": 2163.4253999999996,
-      "score": 0.79
+      "displayValue": "2.5 s",
+      "numericValue": 2494.2699,
+      "score": 0.67
     },
     "lcp": {
-      "displayValue": "2.8 s",
-      "numericValue": 2755.7089999999994,
-      "score": 0.84
+      "displayValue": "2.9 s",
+      "numericValue": 2883.5397999999996,
+      "score": 0.81
     },
     "si": {
-      "displayValue": "2.2 s",
-      "numericValue": 2163.4253999999996,
-      "score": 0.99
+      "displayValue": "2.5 s",
+      "numericValue": 2494.2699,
+      "score": 0.98
     },
     "tbt": {
       "displayValue": "0 ms",
-      "numericValue": 2,
+      "numericValue": 3.5,
       "score": 1
     },
     "cls": {
@@ -38,31 +38,36 @@
     },
     "tti": {
       "displayValue": "2.9 s",
-      "numericValue": 2915.52503,
+      "numericValue": 2891.0398,
       "score": 0.96
     },
-    "ttfb": 89
+    "ttfb": 20
   },
   "failingAudits": [
     {
       "id": "first-contentful-paint",
       "title": "First Contentful Paint",
-      "score": 0.79
+      "score": 0.67
     },
     {
       "id": "largest-contentful-paint",
       "title": "Largest Contentful Paint",
-      "score": 0.84
+      "score": 0.81
     },
     {
       "id": "speed-index",
       "title": "Speed Index",
-      "score": 0.99
+      "score": 0.98
     },
     {
       "id": "interactive",
       "title": "Time to Interactive",
       "score": 0.96
+    },
+    {
+      "id": "unused-javascript",
+      "title": "Reduce unused JavaScript",
+      "score": 0
     },
     {
       "id": "cache-insight",
