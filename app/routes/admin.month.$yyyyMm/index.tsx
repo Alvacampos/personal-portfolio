@@ -237,16 +237,27 @@ export default function AdminMonth() {
             <h2 id="transactions-heading" className={getClasses('section-title')}>
               {activeCategory ? `Transactions — ${activeCategory.categoryName}` : 'Transactions'}
             </h2>
-            <div className={getClasses('transaction-list')}>
-              {visibleTransactions.map((tx) => (
-                <Card key={tx.id} title={tx.description}>
-                  <p className={getClasses('transaction-meta')}>
-                    {tx.categoryName} · {format(parseISO(tx.occurredOn), 'MMM d')} · {tx.paidBy}
-                  </p>
-                  <p className={getClasses('transaction-amount')}>{formatArs(tx.amount.ars)}</p>
-                </Card>
-              ))}
-            </div>
+            {/* A category only ever appears in the list if it has at
+             * least one transaction, so this can't happen against
+             * today's fixtures — kept as a defensive guard since a real
+             * backend response is the first thing that gets to disagree
+             * with that assumption. */}
+            {visibleTransactions.length === 0 ? (
+              <p className={getClasses('empty-state')} role="status">
+                No transactions in this category.
+              </p>
+            ) : (
+              <div className={getClasses('transaction-list')}>
+                {visibleTransactions.map((tx) => (
+                  <Card key={tx.id} title={tx.description}>
+                    <p className={getClasses('transaction-meta')}>
+                      {tx.categoryName} · {format(parseISO(tx.occurredOn), 'MMM d')} · {tx.paidBy}
+                    </p>
+                    <p className={getClasses('transaction-amount')}>{formatArs(tx.amount.ars)}</p>
+                  </Card>
+                ))}
+              </div>
+            )}
           </section>
         </>
       )}
