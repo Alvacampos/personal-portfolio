@@ -94,6 +94,26 @@
   margin: 0 0 var(--space-16) 0;
 }
 
+.admin-year-route__monthly {
+  position: relative;
+}
+
+/* Visually hidden but exposed to assistive tech — same technique as
+ * Input's __label (app/components/Input/style.css). The bar chart is
+ * aria-hidden, so this list is the actual accessible content for the
+ * "month by month" section. */
+.admin-year-route__monthly-table {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
 .admin-year-route__category-list {
   list-style: none;
   margin: 0;

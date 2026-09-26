@@ -147,6 +147,19 @@ test.describe('Admin year view (/admin/year/:year)', () => {
     await expect(page.getByText('Groceries').first()).toBeVisible();
   });
 
+  test('the bar chart has a real accessible equivalent, not just a hidden chart', async ({
+    page,
+  }) => {
+    await page.goto('/admin/year/2025');
+    // The chart itself is aria-hidden (decorative, like the pie chart) —
+    // this is the actual content a screen reader gets for "month by
+    // month," so it has to exist in the DOM even though it's visually
+    // hidden, not merely absent.
+    const monthlyTable = page.locator('.admin-year-route__monthly-table');
+    await expect(monthlyTable).toBeAttached();
+    await expect(monthlyTable.getByText(/January 2025/i)).toBeAttached();
+  });
+
   test('shows fewer bars for the partial (YTD) year', async ({ page }) => {
     await page.goto('/admin/year/2026');
     await page.waitForLoadState('networkidle');

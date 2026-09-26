@@ -1,3 +1,4 @@
+import { format, parse } from 'date-fns';
 import { useState } from 'react';
 import type { LoaderFunctionArgs, MetaFunction } from 'react-router';
 import { isRouteErrorResponse, Link, useLoaderData, useRouteError } from 'react-router';
@@ -27,6 +28,10 @@ const YEAR_RE = /^\d{4}$/;
 // §6 says `/api/ytd` is "same shape as /years, bounded at today"), and
 // every other year demonstrates the empty state. Phase C replaces this
 // with a real fetch to GET /api/years/{yyyy} or GET /api/ytd.
+function formatMonthLabel(yyyyMm: string): string {
+  return format(parse(yyyyMm, 'yyyy-MM', new Date()), 'MMMM yyyy');
+}
+
 function getYearFixture(year: number): YearResponse {
   if (year === 2025) return FIXTURE_YEAR;
   if (year === 2026) return FIXTURE_YTD;
@@ -133,6 +138,18 @@ export default function AdminYear() {
                 value: entry.total.ars,
               }))}
             />
+            {/* Accessible equivalent of the chart above — visually hidden,
+             * real content for screen readers. Unlike the pie chart, the
+             * bar chart has no on-screen list acting as its accessible
+             * source of truth, so it needs one of its own rather than
+             * leaving screen reader users with nothing for this section. */}
+            <ul className={getClasses('monthly-table')}>
+              {year.monthlyTotals.map((entry) => (
+                <li key={entry.month}>
+                  {formatMonthLabel(entry.month)}: {formatArs(entry.total.ars)}
+                </li>
+              ))}
+            </ul>
           </section>
 
           <PieChart
