@@ -36,6 +36,12 @@
     "gzip": true
   },
   {
+    "name": "total route JS (all route chunks, public + /admin)",
+    "path": "build/client/assets/index-*.js",
+    "limit": "120 KB",
+    "gzip": true
+  },
+  {
     "name": "Timeline (lazy chunk)",
     "path": "build/client/assets/Timeline-*.js",
     "limit": "3.5 KB",

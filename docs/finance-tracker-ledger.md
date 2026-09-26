@@ -42,7 +42,7 @@
 | Phase                                   | Status | Notes                                                                                                                                                     |
 | --------------------------------------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Phase A — Static shell against fixtures | done   | Routes, `admin` layout + nav, month view (header/categories/transactions/analysis) against fixtures, e2e-covered. Chart + isolate interaction is Phase B. |
-| Phase B — Charts (pie + category list)  | open   |                                                                                                                                                           |
+| Phase B — Charts (pie + category list)  | done   | Recharts pie chart + category-list isolate/filter interaction, e2e-covered. Bar chart is Phase D.                                                         |
 | Phase C — Auth + live integration       | open   | Blocked on backend Phase 5 existing for real, but the shell can be built against fixtures first.                                                          |
 | Phase D — Yearly view                   | open   |                                                                                                                                                           |
 | Phase E — Claude analysis section       | open   | Blocked on backend Phase 4C.                                                                                                                              |
@@ -53,6 +53,57 @@
 Newest first. Each entry: what was decided or tried, and why — especially
 the "we tried X and backed out" entries, which are the ones worth having a
 record of.
+
+### 2026-09-26 — PR #331 adversarially reviewed: two more real findings
+
+Reviewed the pushed diff fresh (not the build-time findings above, which
+were already fixed before the first push). Two more:
+
+- The a11y route loop only ever does goto-and-scan — the new isolated-
+  category markup (`aria-pressed`, the active row's background/border)
+  had never actually been rendered when axe ran against it, so it was
+  "probably fine by analogy to Card's existing bg-elevated usage" rather
+  than actually checked. Added a one-off test that clicks a category
+  first, then scans — passed, confirming the analogy, but confirmed
+  rather than assumed.
+- The transaction list would render silently empty if an isolated
+  category ever had zero matching transactions. Not reachable with
+  today's fixtures (a category only appears in the list if it has at
+  least one transaction), but a real backend response is the first thing
+  that gets to disagree with that assumption — added a defensive empty
+  state.
+
+### 2026-09-26 — Phase B shipped: Recharts pie chart + category isolate/filter
+
+- Installed `recharts` (real prod dependency, React 19-compatible). Built
+  `app/components/PieChart/` as a thin wrapper (component conventions,
+  AGENTS.md §14) plus `app/utils/category-colors.ts` — a new categorical
+  color palette (Okabe–Ito, colorblind-safe) this repo didn't have before,
+  since every existing token set only ever needed one accent hue.
+- Category list rows upgraded from static text to real buttons: tapping
+  one (or a pie slice — same handler either way) isolates that category,
+  dimming the other slices, filtering the transaction list, and swapping
+  the header's total for the category's own total. Tapping the active
+  one again clears it. State resets on month navigation (adjusted during
+  render, not in an effect — the render-time "derived state" pattern
+  React's own docs recommend, not the cascading-render-prone effect
+  version the lint rule `react-hooks/set-state-in-effect` caught).
+- **Real accessibility bug caught by the a11y gate, not assumed away**:
+  Recharts' default `accessibilityLayer` adds its own `tabindex="0"`
+  keyboard scaffolding to the SVG surface and pie group — since the whole
+  chart is `aria-hidden` (the category list is the actual accessible
+  interaction), that left silent, focusable-but-invisible tab stops.
+  Fixed with `accessibilityLayer={false}` + `rootTabIndex={-1}`.
+- **Real UX bug caught in review**: the delta color-polarity fix from the
+  Phase A review pass wasn't retested until now — confirmed still correct
+  (spending decrease = accent green).
+- Recharts' weight (~100 KB gzip) lands entirely in the
+  `/admin/month/:yyyyMm` route's own chunk — confirmed by grepping the
+  build output, not assumed — so it never touches the public bundles
+  size-limit already gates. Added a new `.size-limit.json` bucket ("total
+  route JS, all chunks") anyway, mirroring the existing "total CSS"
+  bucket's same-glob-can't-discriminate-by-route limitation, as a coarse
+  safety net against any route's JS growing unbounded unnoticed.
 
 ### 2026-09-26 — PR #330: CI's bundle-size gate failed, fixed; branch synced with main
 
