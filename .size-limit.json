@@ -36,9 +36,19 @@
     "gzip": true
   },
   {
-    "name": "total route JS (all route chunks, public + /admin)",
-    "path": "build/client/assets/index-*.js",
-    "limit": "120 KB",
+    "name": "total route JS (everything not already named above, public + /admin)",
+    "path": [
+      "build/client/assets/*.js",
+      "!build/client/assets/entry.client-*.js",
+      "!build/client/assets/components-*.js",
+      "!build/client/assets/utils-*.js",
+      "!build/client/assets/root-*.js",
+      "!build/client/assets/errorBoundaries-*.js",
+      "!build/client/assets/Timeline-*.js",
+      "!build/client/assets/TenureHeatmap-*.js",
+      "!build/client/assets/TechTree-*.js"
+    ],
+    "limit": "170 KB",
     "gzip": true
   },
   {
