@@ -54,6 +54,30 @@ Newest first. Each entry: what was decided or tried, and why — especially
 the "we tried X and backed out" entries, which are the ones worth having a
 record of.
 
+### 2026-09-26 — PR #330 opened for docs + Phase A; adversarially reviewed
+
+New standing workflow (recorded in Claude's memory as `phase-branch-workflow`):
+every phase gets its own branch, pushed, opened as a PR, and adversarially
+reviewed before being called done. Applied retroactively here since the
+planning docs + Phase A had accumulated on one branch without ever going
+through a PR. Pushed `docs/finance-tracker-plan`, opened
+[#330](https://github.com/Alvacampos/personal-portfolio/pull/330), then
+reviewed the full diff fresh (not just recalling having written it) and
+found three real issues, all fixed before considering it done:
+
+- `workers/app.ts`'s noindex check used a bare `startsWith('/admin')` —
+  would also catch a hypothetical future `/adminfoo` route. Tightened to
+  match `root.tsx`'s exact-or-prefix-with-slash check.
+- The month view's spending delta had the color polarity backwards —
+  "spending went up" was rendered in the accent (green/positive) color.
+  Fixed so "down" gets it instead, since a decrease is the actually-good
+  outcome for a budget.
+- `tests/e2e/a11y.spec.ts` had zero coverage of the new `/admin` routes
+  despite `finance-frontend.md` §10 committing to the same a11y bar as
+  the public site. Added both routes to the gate, which immediately
+  caught a real WCAG AA contrast failure (`--fg-faint` at 12px against
+  the light-mode background) — swapped to `--fg-muted`.
+
 ### 2026-09-26 — Phase A shipped: admin shell + month view against fixtures
 
 - Built the routes from `finance-frontend.md` §2/§12: `admin` layout
