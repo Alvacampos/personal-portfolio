@@ -39,20 +39,57 @@
 
 ### Frontend (this repo, `/admin/*`)
 
-| Phase                                   | Status      | Notes                                                                                                           |
-| --------------------------------------- | ----------- | --------------------------------------------------------------------------------------------------------------- |
-| Phase A — Static shell against fixtures | in-progress | API contract + fixtures exist (`app/data/admin-schema.ts`, `admin-fixtures.ts`); routes/layout/nav not started. |
-| Phase B — Charts (pie + category list)  | open        |                                                                                                                 |
-| Phase C — Auth + live integration       | open        | Blocked on backend Phase 5 existing for real, but the shell can be built against fixtures first.                |
-| Phase D — Yearly view                   | open        |                                                                                                                 |
-| Phase E — Claude analysis section       | open        | Blocked on backend Phase 4C.                                                                                    |
-| Phase F — Vacations                     | open        | Planning UI deliberately deferred (wait-and-see, frontend §6) — list/detail view only for v1.                   |
+| Phase                                   | Status | Notes                                                                                                                                                     |
+| --------------------------------------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Phase A — Static shell against fixtures | done   | Routes, `admin` layout + nav, month view (header/categories/transactions/analysis) against fixtures, e2e-covered. Chart + isolate interaction is Phase B. |
+| Phase B — Charts (pie + category list)  | open   |                                                                                                                                                           |
+| Phase C — Auth + live integration       | open   | Blocked on backend Phase 5 existing for real, but the shell can be built against fixtures first.                                                          |
+| Phase D — Yearly view                   | open   |                                                                                                                                                           |
+| Phase E — Claude analysis section       | open   | Blocked on backend Phase 4C.                                                                                                                              |
+| Phase F — Vacations                     | open   | Planning UI deliberately deferred (wait-and-see, frontend §6) — list/detail view only for v1.                                                             |
 
 ## Decision log
 
 Newest first. Each entry: what was decided or tried, and why — especially
 the "we tried X and backed out" entries, which are the ones worth having a
 record of.
+
+### 2026-09-26 — Phase A shipped: admin shell + month view against fixtures
+
+- Built the routes from `finance-frontend.md` §2/§12: `admin` layout
+  (own small nav — Month link, ThemeToggle, sign-out placeholder; no
+  public NavBar), `admin._index` (login placeholder — Phase C wires
+  real Google OAuth), `admin.dashboard` (redirects to the current
+  month), `admin.month.$yyyyMm` (header with prev/next + ARS/USD
+  toggle + delta, static category list, Card-based transaction list,
+  Claude analysis section, empty state, 400 ErrorBoundary for a
+  malformed month param). All against `app/data/admin-fixtures.ts` — no
+  network calls yet.
+- Resolved the fs-routes layout-naming unknown flagged in
+  `finance-frontend.md` §1 by reading the installed
+  `@react-router/fs-routes@8.4.0` source directly: a leading underscore
+  makes a route segment a _pathless_ layout (invisible in the URL),
+  which is wrong for `/admin` (it must appear in the URL) — so the
+  right shape is a plain `admin/index.tsx` layout with `admin.*` child
+  routes, no underscore.
+- Caught and fixed two integration gaps that only showed up once real
+  `/admin` routes existed: `app/root.tsx`'s `<NavBar />` rendered
+  unconditionally on every route, including `/admin` — now skipped via
+  a `useLocation()` check. `PendingBoundary`'s skeleton registry had no
+  `/admin` rule and would have fallen back to the public `HomeSkeleton`
+  during slow navigations (dormant today since fixtures resolve
+  instantly, but a real bug once Phase C adds live network latency) —
+  added a rule that renders nothing for `/admin/*` instead.
+- Applied `finance-tracker.md` §6.4's noindex requirement now that
+  `/admin` routes exist for the first time: `Disallow: /admin` in
+  `robots.txt`, and `X-Robots-Tag: noindex` on every `/admin*` HTML
+  response in `workers/app.ts` (verified against the real Worker via
+  `wrangler dev`, not just the Vite dev server, since dev mode skips
+  `workers/app.ts` entirely).
+- Added `tests/e2e/admin.spec.ts` (8 tests, all passing) covering the
+  login → dashboard redirect → populated month → empty month → prev/next
+  → malformed-param ErrorBoundary flow. Full existing suite re-run
+  clean (one pre-existing flaky unrelated test self-recovered on retry).
 
 ### 2026-09-26 — Backend kickoff doc adversarially reviewed; API contract built as real code
 

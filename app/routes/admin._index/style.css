@@ -1,0 +1,38 @@
+.admin-login-route {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: var(--space-16);
+  min-height: 60vh;
+}
+
+.admin-login-route__title {
+  font-size: var(--font-30);
+  margin: 0;
+}
+
+.admin-login-route__subtitle {
+  color: var(--fg-muted);
+  margin: 0;
+}
+
+.admin-login-route__sign-in-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-12) var(--space-20);
+  background: var(--accent);
+  color: var(--fg-on-accent);
+  font-weight: var(--weight-700);
+  text-decoration: none;
+  border-radius: var(--border-8);
+  /* Comfortably above the 44px touch-target floor. */
+  min-height: 44px;
+}
+
+.admin-login-route__sign-in-button:hover,
+.admin-login-route__sign-in-button:focus-visible {
+  background: var(--accent-soft);
+}

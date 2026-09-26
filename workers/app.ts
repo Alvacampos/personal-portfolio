@@ -164,6 +164,13 @@ export default {
       return withSecurityHeaders(response, csp, { 'X-Robots-Tag': 'noindex' });
     }
     const context = createAppLoadContext({ env, ctx }, nonce);
-    return withSecurityHeaders(await requestHandler(request, context), csp, undefined, true);
+    // /admin/* is a private tool, not public CV content — never let it
+    // get indexed. See docs/finance-tracker.md §6.4; robots.txt also
+    // disallows the path, this is belt-and-suspenders for crawlers that
+    // ignore robots.txt.
+    const extraHeaders = url.pathname.startsWith('/admin')
+      ? { 'X-Robots-Tag': 'noindex' }
+      : undefined;
+    return withSecurityHeaders(await requestHandler(request, context), csp, extraHeaders, true);
   },
 } satisfies ExportedHandler<Env>;

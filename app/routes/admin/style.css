@@ -1,0 +1,67 @@
+@import '../../components/ThemeToggle/style.css';
+
+.admin-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.admin-layout__nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-16);
+  padding: var(--space-12) var(--space-16);
+  background: var(--bg-nav);
+  border-bottom: 1px solid var(--border-default);
+}
+
+.admin-layout__nav-links {
+  display: flex;
+  gap: var(--space-16);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.admin-layout__nav-link {
+  color: var(--fg-muted);
+  font-weight: var(--weight-700);
+  text-decoration: none;
+  padding: var(--space-8) var(--space-4);
+  border-bottom: 2px solid transparent;
+}
+
+.admin-layout__nav-link--active {
+  color: var(--fg-base);
+  border-bottom-color: var(--accent);
+}
+
+.admin-layout__nav-utility {
+  display: flex;
+  align-items: center;
+  gap: var(--space-16);
+}
+
+.admin-layout__sign-out {
+  color: var(--fg-muted);
+  font-size: var(--font-14);
+  text-decoration: none;
+}
+
+.admin-layout__sign-out:hover,
+.admin-layout__sign-out:focus-visible {
+  color: var(--fg-base);
+  text-decoration: underline;
+}
+
+.admin-layout__content {
+  flex: 1;
+  padding: var(--space-16);
+  /* Matches $bp-lg (app/styles/constants.js) — caps line length on wide
+   * screens without introducing a breakpoint-token dependency in a
+   * plain declaration (those tokens are @media-only, see constants.js). */
+  max-width: 1024px;
+  margin: 0 auto;
+  width: 100%;
+}
