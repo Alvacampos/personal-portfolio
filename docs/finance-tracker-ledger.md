@@ -39,20 +39,51 @@
 
 ### Frontend (this repo, `/admin/*`)
 
-| Phase                                   | Status | Notes                                                                                            |
-| --------------------------------------- | ------ | ------------------------------------------------------------------------------------------------ |
-| Phase A — Static shell against fixtures | open   |                                                                                                  |
-| Phase B — Charts (pie + category list)  | open   |                                                                                                  |
-| Phase C — Auth + live integration       | open   | Blocked on backend Phase 5 existing for real, but the shell can be built against fixtures first. |
-| Phase D — Yearly view                   | open   |                                                                                                  |
-| Phase E — Claude analysis section       | open   | Blocked on backend Phase 4C.                                                                     |
-| Phase F — Vacations                     | open   | Planning UI deliberately deferred (wait-and-see, frontend §6) — list/detail view only for v1.    |
+| Phase                                   | Status      | Notes                                                                                                           |
+| --------------------------------------- | ----------- | --------------------------------------------------------------------------------------------------------------- |
+| Phase A — Static shell against fixtures | in-progress | API contract + fixtures exist (`app/data/admin-schema.ts`, `admin-fixtures.ts`); routes/layout/nav not started. |
+| Phase B — Charts (pie + category list)  | open        |                                                                                                                 |
+| Phase C — Auth + live integration       | open        | Blocked on backend Phase 5 existing for real, but the shell can be built against fixtures first.                |
+| Phase D — Yearly view                   | open        |                                                                                                                 |
+| Phase E — Claude analysis section       | open        | Blocked on backend Phase 4C.                                                                                    |
+| Phase F — Vacations                     | open        | Planning UI deliberately deferred (wait-and-see, frontend §6) — list/detail view only for v1.                   |
 
 ## Decision log
 
 Newest first. Each entry: what was decided or tried, and why — especially
 the "we tried X and backed out" entries, which are the ones worth having a
 record of.
+
+### 2026-09-26 — Backend kickoff doc adversarially reviewed; API contract built as real code
+
+- Ran an adversarial pass on `finance-tracker-backend-kickoff.md`. Real
+  finds, fixed inline: the doc never explained how the session JWT
+  crosses from the backend's domain (where the OAuth dance runs) to the
+  frontend's domain — fixed by specifying a `Domain=.<registrable-domain>`
+  cookie, which only works because both services share a registrable
+  domain (already the plan per the costs table) — and flagged what
+  breaks it if that ever changes. Also added: a `state`-param CSRF check
+  on the OAuth flow, a callout that the JWT-signing secret is shared
+  state across two separately-deployed repos, and a correction that the
+  FX-rate API's terms only need confirming at Phase 4 (when ingestion
+  first calls it), not Phase 1.
+- **Categories are a normalized `categories` table with an FK from
+  `expenses.category_id`, not a free-text column or enum** — surfaced by
+  noticing `GET /api/categories` only makes sense as an endpoint if
+  categories are a real backend-owned dataset, and a free-text field
+  would let a typo silently fragment a category in every report. Matches
+  the project's stated SQL-learning goal better too.
+- Since the two repos are being built in parallel (backend by you,
+  frontend here), wrote the actual API contract as code rather than
+  leaving it as prose: `app/data/admin-schema.ts` (Zod schemas + inferred
+  types for every endpoint response) and `app/data/admin-fixtures.ts`
+  (hand-written fixtures validated against that schema in
+  `admin-schema.test.ts`). The backend kickoff doc's new §6.1 inlines the
+  same shapes as literal JSON, plus a note that the wire format is
+  camelCase — FastAPI/Pydantic's default snake_case won't match unless
+  the backend's response models use an alias generator. This is meant to
+  be the actual target the backend implements against, not just
+  illustrative.
 
 ### 2026-09-25 — Frontend plan's four open forks resolved
 

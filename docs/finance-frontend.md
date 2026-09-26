@@ -326,9 +326,14 @@ _implementation_, only on the API _contract_ (§4/§5/§6 above, plus the
 backend doc's §7 endpoint list, are that contract).
 
 - **Phase A — Static shell against fixtures.** Routes, layout, nav, the
-  month view's structure, using a local JSON fixture standing in for the
-  real API response. No backend calls yet. Gets the "does this look and
-  feel right" question answered fast and cheaply.
+  month view's structure. The API contract already exists as real code,
+  not just prose: `app/data/admin-schema.ts` (Zod schemas + types for
+  every endpoint response) and `app/data/admin-fixtures.ts` (hand-written
+  fixtures that satisfy them) — written specifically so this phase and
+  the backend's implementation can proceed in parallel against the same
+  shape. Route loaders import the fixtures directly; no backend calls
+  yet. Gets the "does this look and feel right" question answered fast
+  and cheaply.
 - **Phase B — Charts.** Pie chart + category-list interaction (§7, §8)
   against the same fixtures — the trickiest visual/interaction piece,
   worth isolating before wiring anything real.
