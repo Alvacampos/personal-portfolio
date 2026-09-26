@@ -9,6 +9,7 @@ import { FIXTURE_ANALYSIS_READY, FIXTURE_MONTH, FIXTURE_MONTH_EMPTY } from '~/da
 import type { MonthlyAnalysisResponse, MonthResponse } from '~/data/admin-schema';
 import { getCategoryColor } from '~/utils/category-colors';
 import { formatArs, formatUsd } from '~/utils/format-money';
+import { useCategoryIsolation } from '~/utils/use-category-isolation';
 import { getClassMaker } from '~/utils/utils';
 
 import styles from './style.css?url';
@@ -90,31 +91,16 @@ export function ErrorBoundary() {
 export default function AdminMonth() {
   const { month, analysis, prevMonth, nextMonth } = useLoaderData<typeof loader>();
   const [showUsd, setShowUsd] = useState(false);
-  const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null);
   const hasData = month.categories.length > 0;
 
-  // The route component doesn't remount across prev/next navigation (same
-  // matched route, just a new param) — without this, isolating a category
-  // in one month would silently carry over into the next. Adjusted during
-  // render (React's own recommended pattern for "reset state when a prop
-  // changes"), not in an effect — an effect would commit a stale render
-  // first and only clear the isolation on the render after.
-  const [lastSeenMonth, setLastSeenMonth] = useState(month.month);
-  if (month.month !== lastSeenMonth) {
-    setLastSeenMonth(month.month);
-    setActiveCategoryId(null);
-  }
-
-  const activeCategory =
-    month.categories.find((category) => category.categoryId === activeCategoryId) ?? null;
+  const { activeCategoryId, activeCategory, toggleCategory, clearCategory } = useCategoryIsolation(
+    month.categories,
+    month.month
+  );
   const displayedTotal = activeCategory ? activeCategory.total : month.total;
   const visibleTransactions = activeCategoryId
     ? month.transactions.filter((tx) => tx.categoryId === activeCategoryId)
     : month.transactions;
-
-  function toggleCategory(categoryId: string) {
-    setActiveCategoryId((current) => (current === categoryId ? null : categoryId));
-  }
 
   return (
     <div className={getClasses()}>
@@ -155,11 +141,7 @@ export default function AdminMonth() {
           // point 5) without inventing data that doesn't exist.
           <p className={getClasses('active-category')}>
             Showing {activeCategory.categoryName} only —{' '}
-            <button
-              type="button"
-              className={getClasses('clear-filter')}
-              onClick={() => setActiveCategoryId(null)}
-            >
+            <button type="button" className={getClasses('clear-filter')} onClick={clearCategory}>
               show all
             </button>
           </p>

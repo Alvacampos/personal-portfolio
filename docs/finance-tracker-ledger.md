@@ -44,7 +44,7 @@
 | Phase A — Static shell against fixtures | done   | Routes, `admin` layout + nav, month view (header/categories/transactions/analysis) against fixtures, e2e-covered. Chart + isolate interaction is Phase B. |
 | Phase B — Charts (pie + category list)  | done   | Recharts pie chart + category-list isolate/filter interaction, e2e-covered. Bar chart is Phase D.                                                         |
 | Phase C — Auth + live integration       | open   | Blocked on backend Phase 5 existing for real, but the shell can be built against fixtures first.                                                          |
-| Phase D — Yearly view                   | open   |                                                                                                                                                           |
+| Phase D — Yearly view                   | done   | Bar chart + same pie/category isolate pattern as month view, e2e-covered. Same-year-over-year comparison remains a fast-follow, not v1.                   |
 | Phase E — Claude analysis section       | open   | Blocked on backend Phase 4C.                                                                                                                              |
 | Phase F — Vacations                     | open   | Planning UI deliberately deferred (wait-and-see, frontend §6) — list/detail view only for v1.                                                             |
 
@@ -53,6 +53,60 @@
 Newest first. Each entry: what was decided or tried, and why — especially
 the "we tried X and backed out" entries, which are the ones worth having a
 record of.
+
+### 2026-09-26 — PR #332 adversarially reviewed: a real a11y gap + a stale comment
+
+Reviewed the pushed diff fresh. Two more findings:
+
+- **Real accessibility gap**: the pie chart has the category list as its
+  accessible source of truth, but the bar chart's month-by-month data had
+  no equivalent anywhere — a screen reader user got the "Month by month"
+  heading and then nothing, since the chart itself is `aria-hidden`.
+  Added a visually-hidden list (same technique as `Input`'s `__label`)
+  with the actual month/total pairs, plus a test asserting the content
+  is genuinely attached — axe wouldn't have flagged the _absence_ of
+  content, only violations in what's present, so this needed its own
+  check, not just a passing a11y gate.
+- On a second pass over the same diff: `BarChart`'s own doc comment
+  claimed "the month-by-month totals are already visible as plain
+  numbers wherever this chart is used" — the exact false assumption the
+  fix above just disproved. Corrected the comment to state the real
+  contract (this component provides no fallback of its own; the
+  consumer is responsible for one) instead of leaving it actively wrong.
+
+### 2026-09-26 — Phase D shipped: yearly view (bar chart + same isolate pattern)
+
+- Extracted `app/utils/use-category-isolation.ts` out of the month
+  route's inline state logic — the year view needed the exact same
+  isolate/toggle/reset behavior, and Phase F's trip view will too, so
+  three usages was the signal to share it rather than keep copy-pasting.
+  Retrofitted the month route onto the same hook so there's one source of
+  truth, not two copies that can drift.
+- New `app/components/BarChart/` for the month-by-month totals. Applied
+  `accessibilityLayer={false}` from the start (learned from Phase B's
+  real a11y bug on PieChart) — the axe gate passed clean on the first
+  try this time, confirming the lesson actually transferred.
+- Routes: `admin.year._index` (redirect to the current year, mirroring
+  `admin.dashboard`) + `admin.year.$year` (the actual view — total with
+  ARS/USD toggle, bar chart, pie chart + category list, empty state, 400
+  ErrorBoundary). No transactions or Claude-analysis section — the
+  `YearResponse` schema has neither at this granularity. Added "Year" to
+  the admin nav.
+- Verified (not assumed) that `fill="var(--accent)"` / `fill="var(--fg-muted)"`
+  as raw SVG attribute strings actually resolve the live CSS custom
+  property in a real browser — checked computed styles via Playwright
+  before trusting the theme-reactive approach for the bar chart.
+- **Real gap caught in this phase's own tooling**: adding a second
+  Recharts-consumer route changed which chunk Vite's automatic
+  code-splitting picked as the "shared" bundle — the whole
+  recharts-containing chunk got renamed from something `index-*.js`
+  (which Phase B's new size-limit bucket matched) to
+  `use-category-isolation-*.js` (which it didn't), silently dropping the
+  measured total from ~110 KB to ~29 KB without the code actually
+  shrinking. Fixed by rewriting that bucket as an exclusion list (every
+  known-fixed-name chunk subtracted out) instead of a name it has to
+  guess — the true total (152 KB) is now what's actually gated, with a
+  170 KB budget.
 
 ### 2026-09-26 — PR #331 adversarially reviewed: two more real findings
 

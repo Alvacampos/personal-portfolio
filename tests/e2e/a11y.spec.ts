@@ -22,6 +22,7 @@ const ROUTES = [
   // (docs/finance-frontend.md §10), not a lower private-tool one.
   { name: 'admin-login', path: '/admin' },
   { name: 'admin-month', path: '/admin/month/2026-08' },
+  { name: 'admin-year', path: '/admin/year/2025' },
 ];
 
 const BLOCKING_IMPACTS = ['serious', 'critical'];
@@ -76,5 +77,15 @@ test.describe('Accessibility (axe)', () => {
       .first()
       .click();
     await expectNoBlockingViolations(page, '/admin/month/2026-08 (Groceries isolated)');
+  });
+
+  test('admin-year (category isolated) has no serious or critical violations', async ({ page }) => {
+    await page.goto('/admin/year/2025');
+    await page.waitForLoadState('networkidle');
+    await page
+      .getByRole('button', { name: /Groceries/ })
+      .first()
+      .click();
+    await expectNoBlockingViolations(page, '/admin/year/2025 (Groceries isolated)');
   });
 });

@@ -129,3 +129,75 @@ test.describe('Admin month view (/admin/month/:yyyyMm)', () => {
     await expect(page.getByText(/Showing .* only/)).toBeVisible();
   });
 });
+
+test.describe('Admin year index (/admin/year)', () => {
+  test('redirects to the current year', async ({ page }) => {
+    await page.goto('/admin/year');
+    await expect(page).toHaveURL(/\/admin\/year\/\d{4}$/);
+  });
+});
+
+test.describe('Admin year view (/admin/year/:year)', () => {
+  test('shows a completed year with the bar chart, pie chart, and categories', async ({ page }) => {
+    await page.goto('/admin/year/2025');
+    await page.waitForLoadState('networkidle');
+    await expect(page.getByRole('heading', { name: '2025', level: 1 })).toBeVisible();
+    await expect(page.locator('.recharts-bar-rectangle')).toHaveCount(12);
+    await expect(page.locator('.recharts-pie-sector')).toHaveCount(6);
+    await expect(page.getByText('Groceries').first()).toBeVisible();
+  });
+
+  test('the bar chart has a real accessible equivalent, not just a hidden chart', async ({
+    page,
+  }) => {
+    await page.goto('/admin/year/2025');
+    // The chart itself is aria-hidden (decorative, like the pie chart) —
+    // this is the actual content a screen reader gets for "month by
+    // month," so it has to exist in the DOM even though it's visually
+    // hidden, not merely absent.
+    const monthlyTable = page.locator('.admin-year-route__monthly-table');
+    await expect(monthlyTable).toBeAttached();
+    await expect(monthlyTable.getByText(/January 2025/i)).toBeAttached();
+  });
+
+  test('shows fewer bars for the partial (YTD) year', async ({ page }) => {
+    await page.goto('/admin/year/2026');
+    await page.waitForLoadState('networkidle');
+    await expect(page.locator('.recharts-bar-rectangle')).toHaveCount(7);
+  });
+
+  test('shows the empty state for a year with no data', async ({ page }) => {
+    await page.goto('/admin/year/2020');
+    await expect(page.getByText(/nothing logged for this year yet/i)).toBeVisible();
+  });
+
+  test('isolating a category swaps the total and resets on year navigation', async ({ page }) => {
+    await page.goto('/admin/year/2025');
+    const groceriesRow = page.getByRole('button', { name: /Groceries/ }).first();
+
+    await groceriesRow.click();
+    await expect(groceriesRow).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByText('Showing Groceries only')).toBeVisible();
+    // Category total (3,600,000 ARS), not the year total (9,550,000).
+    await expect(page.locator('.admin-year-route__total')).toContainText('3.600.000');
+
+    await page.getByRole('link', { name: /next year/i }).click();
+    await expect(page).toHaveURL('/admin/year/2026');
+    await expect(page.getByText(/Showing .* only/)).toHaveCount(0);
+  });
+
+  test('prev/next navigate between years', async ({ page }) => {
+    await page.goto('/admin/year/2025');
+    await page.getByRole('link', { name: /next year/i }).click();
+    await expect(page).toHaveURL('/admin/year/2026');
+    await page.getByRole('link', { name: /previous year/i }).click();
+    await expect(page).toHaveURL('/admin/year/2025');
+  });
+
+  test('renders the ErrorBoundary for a malformed year param', async ({ page }) => {
+    await page.goto('/admin/year/not-a-year', { waitUntil: 'domcontentloaded' });
+    await expect(page.getByText(/that year doesn't look right/i)).toBeVisible();
+    await page.getByRole('link', { name: /back to current year/i }).click();
+    await expect(page).toHaveURL(/\/admin\/year\/\d{4}$/);
+  });
+});

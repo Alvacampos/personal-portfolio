@@ -10,10 +10,13 @@ export const links = () => [{ rel: 'stylesheet', href: styles }];
 const BLOCK = 'admin-layout';
 const getClasses = getClassMaker(BLOCK);
 
-// Only "Month" exists so far (docs/finance-frontend.md §12 — Year and
-// Trips are separate phases). Add entries here as their routes land so
+// Only "Month" and "Year" exist so far (docs/finance-frontend.md §12 —
+// Trips is a separate phase). Add entries here as their routes land so
 // this never links to a 404.
-const NAV_LINKS = [{ to: '/admin/dashboard', label: 'Month', prefix: '/admin/month' }] as const;
+const NAV_LINKS = [
+  { to: '/admin/dashboard', label: 'Month', prefix: '/admin/month' },
+  { to: '/admin/year', label: 'Year', prefix: '/admin/year' },
+] as const;
 
 export default function AdminLayout() {
   const { pathname } = useLocation();
