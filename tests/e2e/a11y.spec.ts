@@ -26,6 +26,30 @@ const ROUTES = [
 
 const BLOCKING_IMPACTS = ['serious', 'critical'];
 
+// Shared by the route loop below and any one-off test that needs to
+// interact with the page first (e.g. clicking into a state that only
+// exists after a user action) before scanning it.
+async function expectNoBlockingViolations(page: import('@playwright/test').Page, label: string) {
+  const results = await new AxeBuilder({ page }).analyze();
+  const blocking = results.violations.filter(
+    (v) => v.impact && BLOCKING_IMPACTS.includes(v.impact)
+  );
+
+  // Print every blocking violation's rule + selector so CI logs surface
+  // the diagnosis without forcing a dev to open the report.
+  if (blocking.length > 0) {
+    const summary = blocking
+      .map((v) => {
+        const nodes = v.nodes.map((n) => n.target.join(' ')).join('\n      ');
+        return `  - [${v.impact}] ${v.id}: ${v.help}\n      ${nodes}`;
+      })
+      .join('\n');
+    console.error(`axe found ${blocking.length} blocking violation(s) on ${label}:\n${summary}`);
+  }
+
+  expect(blocking).toEqual([]);
+}
+
 test.describe('Accessibility (axe)', () => {
   for (const { name, path } of ROUTES) {
     test(`${name} has no serious or critical violations`, async ({ page }) => {
@@ -33,27 +57,24 @@ test.describe('Accessibility (axe)', () => {
       // Use the same `networkidle` settle as visual.spec.ts so axe runs
       // against the fully-hydrated page, not a partial render.
       await page.waitForLoadState('networkidle');
-
-      const results = await new AxeBuilder({ page }).analyze();
-
-      const blocking = results.violations.filter(
-        (v) => v.impact && BLOCKING_IMPACTS.includes(v.impact)
-      );
-
-      // Print every blocking violation's rule + selector so CI logs
-      // surface the diagnosis without forcing a dev to open the report.
-      if (blocking.length > 0) {
-        const summary = blocking
-          .map((v) => {
-            const nodes = v.nodes.map((n) => n.target.join(' ')).join('\n      ');
-            return `  - [${v.impact}] ${v.id}: ${v.help}\n      ${nodes}`;
-          })
-          .join('\n');
-
-        console.error(`axe found ${blocking.length} blocking violation(s) on ${path}:\n${summary}`);
-      }
-
-      expect(blocking).toEqual([]);
+      await expectNoBlockingViolations(page, path);
     });
   }
+
+  // The isolated-category state (docs/finance-frontend.md §4/§8) only
+  // exists after a click — new markup (aria-pressed, the active row's
+  // styling) that the plain goto-and-scan loop above never actually
+  // renders, so it needs its own pass rather than being assumed clean
+  // by analogy to the resting state.
+  test('admin-month (category isolated) has no serious or critical violations', async ({
+    page,
+  }) => {
+    await page.goto('/admin/month/2026-08');
+    await page.waitForLoadState('networkidle');
+    await page
+      .getByRole('button', { name: /Groceries/ })
+      .first()
+      .click();
+    await expectNoBlockingViolations(page, '/admin/month/2026-08 (Groceries isolated)');
+  });
 });
