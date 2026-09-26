@@ -15,7 +15,11 @@ import SkillsSkeleton from '~/components/skeletons/SkillsSkeleton';
 // doesn't create a component during render — sidesteps the
 // react-hooks/static-components lint that reasonably objects to
 // dynamic component identity across renders.
-const RULES: Array<{ test: (p: string) => boolean; render: () => React.ReactElement }> = [
+const RULES: Array<{ test: (p: string) => boolean; render: () => React.ReactElement | null }> = [
+  // /admin/* has no skeleton of its own yet and definitely shouldn't
+  // borrow the public HomeSkeleton — render nothing and let the
+  // outgoing content stay put until the loader resolves.
+  { test: (p) => p === '/admin' || p.startsWith('/admin/'), render: () => null },
   { test: (p) => p === '/', render: () => <HomeSkeleton /> },
   { test: (p) => /^\/education\/[^/]+$/.test(p), render: () => <EducationDetailSkeleton /> },
   { test: (p) => p === '/education', render: () => <EducationSkeleton /> },
@@ -26,7 +30,7 @@ const RULES: Array<{ test: (p: string) => boolean; render: () => React.ReactElem
   { test: (p) => p === '/contact', render: () => <ContactSkeleton /> },
 ];
 
-export function renderSkeleton(pathname: string): React.ReactElement {
+export function renderSkeleton(pathname: string): React.ReactElement | null {
   const path = pathname.replace(/\/+$/, '') || '/';
   for (const rule of RULES) {
     if (rule.test(path)) return rule.render();

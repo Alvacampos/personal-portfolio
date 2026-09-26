@@ -18,6 +18,10 @@ const ROUTES = [
   { name: 'projects-index', path: '/projects' },
   { name: 'projects-detail', path: '/projects/avant' },
   { name: 'contact', path: '/contact' },
+  // /admin holds the same accessibility bar as the public site
+  // (docs/finance-frontend.md §10), not a lower private-tool one.
+  { name: 'admin-login', path: '/admin' },
+  { name: 'admin-month', path: '/admin/month/2026-08' },
 ];
 
 const BLOCKING_IMPACTS = ['serious', 'critical'];

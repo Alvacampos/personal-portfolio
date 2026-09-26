@@ -1,0 +1,160 @@
+@import '../../components/Card/style.css';
+
+.admin-month-route {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-32);
+}
+
+.admin-month-route__header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-8);
+  text-align: center;
+}
+
+.admin-month-route__month-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-16);
+}
+
+.admin-month-route__month-nav-arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* 44px touch-target floor (docs/finance-frontend.md §3). */
+  min-width: 44px;
+  min-height: 44px;
+  font-size: var(--font-24);
+  color: var(--fg-muted);
+  text-decoration: none;
+  border-radius: var(--border-8);
+}
+
+.admin-month-route__month-nav-arrow:hover,
+.admin-month-route__month-nav-arrow:focus-visible {
+  color: var(--fg-base);
+  background: var(--bg-elevated);
+}
+
+.admin-month-route__month-title {
+  font-size: var(--font-24);
+  margin: 0;
+  min-width: 220px;
+}
+
+.admin-month-route__total {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  font-size: var(--font-30);
+  font-weight: var(--weight-700);
+  background: none;
+  border: none;
+  color: var(--fg-base);
+  cursor: pointer;
+  padding: var(--space-8);
+  min-height: 44px;
+}
+
+.admin-month-route__total-hint {
+  font-size: var(--font-12);
+  font-weight: 400;
+  color: var(--fg-muted);
+}
+
+.admin-month-route__delta {
+  margin: 0;
+  color: var(--fg-muted);
+}
+
+/* "Down" (spending decreased) is the good outcome for a budget — it gets
+ * the accent color. "Up" intentionally has no special color of its own
+ * (the ▲ glyph + number already say "increased"); this repo's palette
+ * has no warning/danger token to reach for instead, and green would send
+ * exactly the wrong signal for a spending increase. */
+.admin-month-route__delta--down {
+  color: var(--accent);
+}
+
+.admin-month-route__empty-state {
+  text-align: center;
+  color: var(--fg-muted);
+  padding: var(--space-32) 0;
+}
+
+.admin-month-route__section-title {
+  font-size: var(--font-20);
+  margin: 0 0 var(--space-16) 0;
+}
+
+.admin-month-route__category-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+.admin-month-route__category-row {
+  display: flex;
+  justify-content: space-between;
+  padding: var(--space-12) var(--space-16);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--border-8);
+  /* Comfortably above the 44px touch-target floor once Phase B makes
+   * these rows tappable. */
+  min-height: 44px;
+  align-items: center;
+}
+
+.admin-month-route__transaction-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+}
+
+.admin-month-route__transaction-meta {
+  color: var(--fg-muted);
+  font-size: var(--font-14);
+  margin: 0 0 var(--space-8) 0;
+}
+
+.admin-month-route__transaction-amount {
+  font-size: var(--font-20);
+  font-weight: var(--weight-700);
+  margin: 0;
+}
+
+.admin-month-route__analysis-text {
+  line-height: 1.6;
+}
+
+.admin-month-route__analysis-meta {
+  color: var(--fg-muted);
+  font-size: var(--font-12);
+}
+
+.admin-month-route__analysis-empty {
+  color: var(--fg-muted);
+}
+
+.admin-month-route__error {
+  text-align: center;
+  padding: var(--space-40) var(--space-16);
+}
+
+.admin-month-route__error-code {
+  color: var(--fg-muted);
+  font-size: var(--font-14);
+}
+
+.admin-month-route__error-action {
+  color: var(--accent);
+}

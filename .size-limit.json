@@ -30,9 +30,9 @@
     "gzip": true
   },
   {
-    "name": "total CSS (all route stylesheets)",
+    "name": "total CSS (all route stylesheets, public + /admin)",
     "path": "build/client/assets/style-*.css",
-    "limit": "14 KB",
+    "limit": "16 KB",
     "gzip": true
   },
   {

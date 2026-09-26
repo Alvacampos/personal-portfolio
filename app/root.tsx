@@ -8,6 +8,7 @@ import {
   Scripts,
   ScrollRestoration,
   useLoaderData,
+  useLocation,
   useRouteError,
   useRouteLoaderData,
 } from 'react-router';
@@ -202,9 +203,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   const { locale } = useLoaderData<typeof loader>();
+  // /admin/* is a separate, private section with its own small nav
+  // (docs/finance-frontend.md §1) — the public NavBar (GitHub/Contact/
+  // etc.) doesn't belong there.
+  const { pathname } = useLocation();
+  const isAdmin = pathname === '/admin' || pathname.startsWith('/admin/');
   return (
     <IntlProvider messages={messagesFor(locale)} locale={locale} defaultLocale="en">
-      <NavBar />
+      {!isAdmin && <NavBar />}
       <main id="main-content">
         <PendingBoundary>
           <Outlet />
