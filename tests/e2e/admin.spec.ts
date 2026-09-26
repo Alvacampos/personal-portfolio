@@ -66,4 +66,66 @@ test.describe('Admin month view (/admin/month/:yyyyMm)', () => {
     await page.getByRole('link', { name: /back to current month/i }).click();
     await expect(page).toHaveURL(/\/admin\/month\/\d{4}-\d{2}$/);
   });
+
+  test('renders the pie chart with one slice per category', async ({ page }) => {
+    await page.goto('/admin/month/2026-08');
+    await page.waitForLoadState('networkidle');
+    // Recharts' <ResponsiveContainer> needs a real browser layout pass to
+    // render its SVG — this is the one place that actually happens.
+    await expect(page.locator('.recharts-pie-sector')).toHaveCount(6);
+  });
+
+  test('isolating a category via the list filters the transaction list and swaps the total', async ({
+    page,
+  }) => {
+    await page.goto('/admin/month/2026-08');
+    const groceriesRow = page.getByRole('button', { name: /Groceries/ }).first();
+
+    await groceriesRow.click();
+    await expect(groceriesRow).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByText('Showing Groceries only')).toBeVisible();
+    await expect(page.getByText('Coto — weekly shop')).toBeVisible();
+    await expect(page.getByText('Monthly rent + expensas')).toHaveCount(0);
+    // Category total (320,000 ARS), not the month total (850,280). Scoped
+    // to the total button specifically — the active Groceries row's own
+    // total also contains "320" and would otherwise match too.
+    await expect(page.locator('.admin-month-route__total')).toContainText('320');
+
+    await groceriesRow.click();
+    await expect(groceriesRow).toHaveAttribute('aria-pressed', 'false');
+    await expect(page.getByText('Monthly rent + expensas')).toBeVisible();
+  });
+
+  test('isolating a category persists across the ARS/USD toggle but resets on month navigation', async ({
+    page,
+  }) => {
+    await page.goto('/admin/month/2026-08');
+    await page
+      .getByRole('button', { name: /Groceries/ })
+      .first()
+      .click();
+    await expect(page.getByText('Showing Groceries only')).toBeVisible();
+
+    // Toggling currency display is independent state — isolating a
+    // category shouldn't get reset by it.
+    await page.locator('.admin-month-route__total').click();
+    await expect(page.getByText('Showing Groceries only')).toBeVisible();
+
+    await page.getByRole('link', { name: /next month/i }).click();
+    await expect(page).toHaveURL('/admin/month/2026-09');
+    await expect(page.getByText(/Showing .* only/)).toHaveCount(0);
+  });
+
+  test('clicking a pie slice isolates the same category as clicking its list row', async ({
+    page,
+  }) => {
+    await page.goto('/admin/month/2026-08');
+    await page.waitForLoadState('networkidle');
+    // Recharts layers an invisible hover-tracking surface over the
+    // sectors for its own tooltip handling, which fails Playwright's
+    // actionability check even though a real click on the same spot
+    // works fine for an actual user — force bypasses that check.
+    await page.locator('.recharts-pie-sector').first().click({ force: true });
+    await expect(page.getByText(/Showing .* only/)).toBeVisible();
+  });
 });

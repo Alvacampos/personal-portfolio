@@ -1,4 +1,5 @@
 @import '../../components/Card/style.css';
+@import '../../components/PieChart/style.css';
 
 .admin-month-route {
   display: flex;
@@ -81,6 +82,21 @@
   color: var(--accent);
 }
 
+.admin-month-route__active-category {
+  margin: 0;
+  color: var(--fg-muted);
+}
+
+.admin-month-route__clear-filter {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--accent);
+  text-decoration: underline;
+  cursor: pointer;
+  font: inherit;
+}
+
 .admin-month-route__empty-state {
   text-align: center;
   color: var(--fg-muted);
@@ -103,15 +119,39 @@
 
 .admin-month-route__category-row {
   display: flex;
-  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-12);
+  width: 100%;
   padding: var(--space-12) var(--space-16);
   background: var(--bg-surface);
   border: 1px solid var(--border-default);
   border-radius: var(--border-8);
-  /* Comfortably above the 44px touch-target floor once Phase B makes
-   * these rows tappable. */
+  /* Comfortably above the 44px touch-target floor. */
   min-height: 44px;
-  align-items: center;
+  color: var(--fg-base);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.admin-month-route__category-row--active {
+  border-color: var(--accent);
+  background: var(--bg-elevated);
+}
+
+.admin-month-route__category-swatch {
+  flex-shrink: 0;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.admin-month-route__category-name {
+  flex: 1;
+}
+
+.admin-month-route__category-total {
+  font-weight: var(--weight-700);
 }
 
 .admin-month-route__transaction-list {

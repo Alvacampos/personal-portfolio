@@ -4,8 +4,10 @@ import type { LoaderFunctionArgs, MetaFunction } from 'react-router';
 import { isRouteErrorResponse, Link, useLoaderData, useRouteError } from 'react-router';
 
 import Card from '~/components/Card';
+import PieChart from '~/components/PieChart';
 import { FIXTURE_ANALYSIS_READY, FIXTURE_MONTH, FIXTURE_MONTH_EMPTY } from '~/data/admin-fixtures';
 import type { MonthlyAnalysisResponse, MonthResponse } from '~/data/admin-schema';
+import { getCategoryColor } from '~/utils/category-colors';
 import { formatArs, formatUsd } from '~/utils/format-money';
 import { getClassMaker } from '~/utils/utils';
 
@@ -88,7 +90,31 @@ export function ErrorBoundary() {
 export default function AdminMonth() {
   const { month, analysis, prevMonth, nextMonth } = useLoaderData<typeof loader>();
   const [showUsd, setShowUsd] = useState(false);
+  const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null);
   const hasData = month.categories.length > 0;
+
+  // The route component doesn't remount across prev/next navigation (same
+  // matched route, just a new param) — without this, isolating a category
+  // in one month would silently carry over into the next. Adjusted during
+  // render (React's own recommended pattern for "reset state when a prop
+  // changes"), not in an effect — an effect would commit a stale render
+  // first and only clear the isolation on the render after.
+  const [lastSeenMonth, setLastSeenMonth] = useState(month.month);
+  if (month.month !== lastSeenMonth) {
+    setLastSeenMonth(month.month);
+    setActiveCategoryId(null);
+  }
+
+  const activeCategory =
+    month.categories.find((category) => category.categoryId === activeCategoryId) ?? null;
+  const displayedTotal = activeCategory ? activeCategory.total : month.total;
+  const visibleTransactions = activeCategoryId
+    ? month.transactions.filter((tx) => tx.categoryId === activeCategoryId)
+    : month.transactions;
+
+  function toggleCategory(categoryId: string) {
+    setActiveCategoryId((current) => (current === categoryId ? null : categoryId));
+  }
 
   return (
     <div className={getClasses()}>
@@ -116,23 +142,41 @@ export default function AdminMonth() {
           onClick={() => setShowUsd((v) => !v)}
           aria-pressed={showUsd}
         >
-          {showUsd ? formatUsd(month.total.usd) : formatArs(month.total.ars)}
+          {showUsd ? formatUsd(displayedTotal.usd) : formatArs(displayedTotal.ars)}
           <span className={getClasses('total-hint')}>
             {showUsd ? 'tap for ARS' : 'tap for USD'}
           </span>
         </button>
-        {month.deltaPercent !== null && (
-          <p
-            className={getClasses('delta', {
-              up: month.deltaPercent > 0,
-              down: month.deltaPercent < 0,
-            })}
-          >
-            <span aria-hidden="true">
-              {month.deltaPercent > 0 ? '▲' : month.deltaPercent < 0 ? '▼' : '–'}
-            </span>{' '}
-            {Math.abs(month.deltaPercent)}% vs last month
+        {activeCategory ? (
+          // Per-category delta isn't a figure the backend returns
+          // (docs/finance-tracker-backend-kickoff.md §6.1 has no such
+          // field) — showing the isolated category's own total already
+          // covers "grey out sections for a cleaner analysis" (brief
+          // point 5) without inventing data that doesn't exist.
+          <p className={getClasses('active-category')}>
+            Showing {activeCategory.categoryName} only —{' '}
+            <button
+              type="button"
+              className={getClasses('clear-filter')}
+              onClick={() => setActiveCategoryId(null)}
+            >
+              show all
+            </button>
           </p>
+        ) : (
+          month.deltaPercent !== null && (
+            <p
+              className={getClasses('delta', {
+                up: month.deltaPercent > 0,
+                down: month.deltaPercent < 0,
+              })}
+            >
+              <span aria-hidden="true">
+                {month.deltaPercent > 0 ? '▲' : month.deltaPercent < 0 ? '▼' : '–'}
+              </span>{' '}
+              {Math.abs(month.deltaPercent)}% vs last month
+            </p>
+          )
         )}
       </header>
 
@@ -142,31 +186,59 @@ export default function AdminMonth() {
         </p>
       ) : (
         <>
+          <PieChart
+            data={month.categories.map((category) => ({
+              id: category.categoryId,
+              label: category.categoryName,
+              value: category.total.ars,
+            }))}
+            activeId={activeCategoryId}
+            onSliceClick={toggleCategory}
+          />
+
           <section className={getClasses('categories')} aria-labelledby="categories-heading">
             <h2 id="categories-heading" className={getClasses('section-title')}>
               Categories
             </h2>
-            {/* Static rows for Phase A — Phase B (docs/finance-frontend.md
-             * §7/§8) upgrades these to buttons that isolate the pie chart
-             * slice and filter the transaction list below. */}
+            {/* The primary, always-reliable way to isolate a category —
+             * the pie chart above is a visual complement to this, not the
+             * only way to do the same thing (docs/finance-frontend.md §3,
+             * §10). Tapping a row both isolates its pie slice and filters
+             * the transaction list below; tapping the active row again
+             * clears the isolation. */}
             <ul className={getClasses('category-list')}>
-              {month.categories.map((category) => (
-                <li key={category.categoryId} className={getClasses('category-row')}>
-                  <span className={getClasses('category-name')}>{category.categoryName}</span>
-                  <span className={getClasses('category-total')}>
-                    {formatArs(category.total.ars)}
-                  </span>
-                </li>
-              ))}
+              {month.categories.map((category, index) => {
+                const isActive = category.categoryId === activeCategoryId;
+                return (
+                  <li key={category.categoryId}>
+                    <button
+                      type="button"
+                      className={getClasses('category-row', { active: isActive })}
+                      onClick={() => toggleCategory(category.categoryId)}
+                      aria-pressed={isActive}
+                    >
+                      <span
+                        className={getClasses('category-swatch')}
+                        style={{ backgroundColor: getCategoryColor(index) }}
+                        aria-hidden="true"
+                      />
+                      <span className={getClasses('category-name')}>{category.categoryName}</span>
+                      <span className={getClasses('category-total')}>
+                        {formatArs(category.total.ars)}
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
             </ul>
           </section>
 
           <section className={getClasses('transactions')} aria-labelledby="transactions-heading">
             <h2 id="transactions-heading" className={getClasses('section-title')}>
-              Transactions
+              {activeCategory ? `Transactions — ${activeCategory.categoryName}` : 'Transactions'}
             </h2>
             <div className={getClasses('transaction-list')}>
-              {month.transactions.map((tx) => (
+              {visibleTransactions.map((tx) => (
                 <Card key={tx.id} title={tx.description}>
                   <p className={getClasses('transaction-meta')}>
                     {tx.categoryName} · {format(parseISO(tx.occurredOn), 'MMM d')} · {tx.paidBy}
