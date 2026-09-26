@@ -21,6 +21,7 @@ ignore:
   - .github
   - .vscode
   - .wrangler
+  - .react-router
   - public
   - node_modules
   - build
