@@ -1,73 +1,68 @@
 {
-  "fetchTime": "2026-06-25T20:45:00.600Z",
-  "requestedUrl": "https://gonzalo-alvarez-campos-cv.com/skills",
-  "finalUrl": "https://gonzalo-alvarez-campos-cv.com/skills",
-  "lighthouseVersion": "13.4.0",
-  "commit": "637c992",
+  "fetchTime": "2026-09-27T22:48:08.982Z",
+  "requestedUrl": "https://gonzalo-alvarez-campos-cv.com/",
+  "finalUrl": "https://gonzalo-alvarez-campos-cv.com/",
+  "lighthouseVersion": "13.4.1",
+  "commit": "2a53879",
   "categories": {
-    "performance": 0.94,
-    "accessibility": 0.96,
+    "performance": 0.82,
+    "accessibility": 1,
     "best-practices": 1,
     "seo": 1
   },
   "metrics": {
     "fcp": {
-      "displayValue": "2.3 s",
-      "numericValue": 2328.5881,
-      "score": 0.73
+      "displayValue": "3.3 s",
+      "numericValue": 3256.3289999999997,
+      "score": 0.41
     },
     "lcp": {
-      "displayValue": "2.7 s",
-      "numericValue": 2683.7791749999997,
-      "score": 0.86
+      "displayValue": "3.7 s",
+      "numericValue": 3718.3824999999997,
+      "score": 0.57
     },
     "si": {
-      "displayValue": "2.3 s",
-      "numericValue": 2328.5881,
-      "score": 0.98
+      "displayValue": "3.3 s",
+      "numericValue": 3256.3289999999997,
+      "score": 0.91
     },
     "tbt": {
       "displayValue": "0 ms",
-      "numericValue": 0,
+      "numericValue": 1,
       "score": 1
     },
     "cls": {
       "displayValue": "0",
-      "numericValue": 0,
+      "numericValue": 0.0001990404033765582,
       "score": 1
     },
     "tti": {
-      "displayValue": "2.7 s",
-      "numericValue": 2692.1188775,
-      "score": 0.97
+      "displayValue": "3.7 s",
+      "numericValue": 3726.7081499999995,
+      "score": 0.9
     },
-    "ttfb": 130
+    "ttfb": 407
   },
   "failingAudits": [
     {
       "id": "first-contentful-paint",
       "title": "First Contentful Paint",
-      "score": 0.73
+      "score": 0.41
     },
     {
       "id": "largest-contentful-paint",
       "title": "Largest Contentful Paint",
-      "score": 0.86
+      "score": 0.57
     },
     {
       "id": "speed-index",
       "title": "Speed Index",
-      "score": 0.98
+      "score": 0.91
     },
     {
       "id": "interactive",
       "title": "Time to Interactive",
-      "score": 0.97
-    },
-    {
-      "id": "color-contrast",
-      "title": "Background and foreground colors do not have a sufficient contrast ratio.",
-      "score": 0
+      "score": 0.9
     },
     {
       "id": "unused-javascript",
@@ -80,6 +75,11 @@
       "score": 0.5
     },
     {
+      "id": "legacy-javascript-insight",
+      "title": "Legacy JavaScript",
+      "score": 0.5
+    },
+    {
       "id": "network-dependency-tree-insight",
       "title": "Network dependency tree",
       "score": 0
@@ -87,7 +87,7 @@
     {
       "id": "render-blocking-insight",
       "title": "Render-blocking requests",
-      "score": 0.5
+      "score": 0
     }
   ]
 }
