@@ -506,14 +506,15 @@ aria-label="…">` with `<th scope="col">` weekday headers (visually
 
 ## 15. Phase K — manual planned line items for vacation planning
 
-Raised during an adversarial review of the shipped admin section
-(`docs/finance-tracker-admin-review-2026-09-27.md`, tracking notes,
-not committed): Phase J's `budget` field lets you set a single
-target number for a trip, but doesn't let you actually plan one out —
-there's no way to jot down "flights: ~$180,000, hotel: ~$300,000"
-ahead of time and see it add up. This section resolves that on paper
-before any code changes, per this project's own convention of writing
-forks down rather than deciding them silently mid-implementation.
+**Shipped.** Raised during an adversarial review of the shipped admin
+section (`docs/finance-tracker-admin-review-2026-09-27.md`, tracking
+notes): Phase J's `budget` field lets you set a single target number
+for a trip, but doesn't let you actually plan one out — there's no way
+to jot down "flights: ~$180,000, hotel: ~$300,000" ahead of time and
+see it add up. This section resolved that on paper before any code
+changes, per this project's own convention of writing forks down
+rather than deciding them silently mid-implementation — then shipped
+the same day.
 
 ### Why this is a bigger decision than Phases A–J
 

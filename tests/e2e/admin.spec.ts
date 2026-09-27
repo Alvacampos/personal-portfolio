@@ -547,6 +547,86 @@ test.describe('Admin trip detail (/admin/trips/:tripId)', () => {
     await expect(page.getByText(/^Budget:/)).toHaveCount(0);
   });
 
+  test.describe('Phase K — manual planned items (against fixtures, not persisted)', () => {
+    test('shows the planned items fixture, including an already-done one', async ({ page }) => {
+      await page.goto('/admin/trips/mendoza-2026-11');
+      await expect(page.getByRole('heading', { name: 'Planning' })).toBeVisible();
+      await expect(page.locator('.admin-trip-route__planned-item')).toHaveCount(3);
+      const insurance = page.locator('.admin-trip-route__planned-item', {
+        hasText: 'Travel insurance',
+      });
+      await expect(insurance.getByRole('checkbox')).toBeChecked();
+    });
+
+    test('a completed trip that never used planning shows no Planning section', async ({
+      page,
+    }) => {
+      await page.goto('/admin/trips/bariloche-2026-01');
+      await expect(page.getByRole('heading', { name: 'Planning' })).toHaveCount(0);
+    });
+
+    test('adds a planned item via the form; toggling done strikes it through', async ({ page }) => {
+      await page.goto('/admin/trips/mendoza-2026-11');
+      // Otherwise `.fill()` can race hydration and get silently
+      // discarded — same guard as the Year/Trips search tests.
+      await page.waitForTimeout(200);
+      await page.getByLabel('Description').fill('Car rental');
+      await page.getByLabel('Estimated amount (ARS)').fill('90000');
+      await page.getByLabel('Category (optional)').selectOption('transport');
+      await page.getByRole('button', { name: 'Add planned item' }).click();
+
+      const carRental = page.locator('.admin-trip-route__planned-item', { hasText: 'Car rental' });
+      await expect(carRental).toContainText('$ 90.000');
+      await expect(carRental).toContainText('Transport');
+      // The form resets after a successful add, not left holding stale
+      // values for the next item.
+      await expect(page.getByLabel('Description')).toHaveValue('');
+
+      await carRental.getByRole('checkbox').check();
+      await expect(carRental.locator('.admin-trip-route__planned-item-description')).toHaveCSS(
+        'text-decoration-line',
+        'line-through'
+      );
+    });
+
+    test('deletes a planned item', async ({ page }) => {
+      await page.goto('/admin/trips/mendoza-2026-11');
+      await page.getByRole('button', { name: /Delete Hotel — 7 nights/ }).click();
+      await expect(page.getByText('Hotel — 7 nights')).toHaveCount(0);
+      await expect(page.locator('.admin-trip-route__planned-item')).toHaveCount(2);
+    });
+
+    test('the add button stays disabled until both description and amount are filled', async ({
+      page,
+    }) => {
+      await page.goto('/admin/trips/mendoza-2026-11');
+      await page.waitForTimeout(200);
+      const addButton = page.getByRole('button', { name: 'Add planned item' });
+      await expect(addButton).toBeDisabled();
+      await page.getByLabel('Description').fill('Souvenirs');
+      await expect(addButton).toBeDisabled();
+      await page.getByLabel('Estimated amount (ARS)').fill('15000');
+      await expect(addButton).toBeEnabled();
+    });
+
+    test('local edits don’t leak onto a different trip’s page', async ({ page }) => {
+      await page.goto('/admin/trips/mendoza-2026-11');
+      await page.waitForTimeout(200);
+      await page
+        .locator('.admin-trip-route__planned-item', { hasText: 'Flights' })
+        .getByRole('checkbox')
+        .check();
+
+      await page.goto('/admin/trips');
+      await page.getByRole('link', { name: /Bariloche/ }).click();
+      await page.getByRole('link', { name: /back to trips/i }).click();
+      await page.getByRole('link', { name: /Mendoza/ }).click();
+
+      const flights = page.locator('.admin-trip-route__planned-item', { hasText: 'Flights' });
+      await expect(flights.getByRole('checkbox')).not.toBeChecked();
+    });
+  });
+
   test('back link returns to the trips list', async ({ page }) => {
     await page.goto('/admin/trips/bariloche-2026-01');
     await page.getByRole('link', { name: /back to trips/i }).click();

@@ -6,8 +6,13 @@ import { isRouteErrorResponse, Link, useLoaderData, useRouteError } from 'react-
 
 import Card from '~/components/Card';
 import PieChart from '~/components/PieChart';
-import { FIXTURE_TRIP, FIXTURE_TRIPS } from '~/data/admin-fixtures';
-import type { TripResponse } from '~/data/admin-schema';
+import {
+  FIXTURE_CATEGORIES,
+  FIXTURE_TRIP,
+  FIXTURE_TRIP_PLANNED,
+  FIXTURE_TRIPS,
+} from '~/data/admin-fixtures';
+import type { PlannedItem, TripResponse } from '~/data/admin-schema';
 import type { Locale } from '~/intl';
 import { adminMeta } from '~/utils/admin-meta';
 import { getCategoryColor } from '~/utils/category-colors';
@@ -27,19 +32,26 @@ const BLOCK = 'admin-trip-route';
 const getClasses = getClassMaker(BLOCK);
 
 // Phase F stands in for the real backend with fixtures
-// (docs/finance-frontend.md §12) — only the Bariloche trip has
-// "populated" data, every other real trip in the list demonstrates the
-// empty state (a trip that exists but has no synced expenses yet).
-// Unlike month/year params, a tripId has no universal valid-format —
-// it's either a real trip or it isn't, so an unknown one is a 404
-// (education.$slug's pattern), not a 400.
+// (docs/finance-frontend.md §12) — Bariloche and Mendoza have
+// "populated" data (transactions and planned items respectively), every
+// other real trip in the list demonstrates the empty state (a trip that
+// exists but has no synced expenses yet). Unlike month/year params, a
+// tripId has no universal valid-format — it's either a real trip or it
+// isn't, so an unknown one is a 404 (education.$slug's pattern), not a 400.
 function getTripFixture(tripId: string): TripResponse {
   if (tripId === FIXTURE_TRIP.id) return FIXTURE_TRIP;
+  if (tripId === FIXTURE_TRIP_PLANNED.id) return FIXTURE_TRIP_PLANNED;
   const summary = FIXTURE_TRIPS.find((trip) => trip.id === tripId);
   // The loader already 404s before this runs for any tripId not in
   // FIXTURE_TRIPS, so `summary` is always defined here — this is just
   // satisfying the type, not a real runtime fallback.
-  return { ...summary!, total: { ars: 0, usd: 0 }, categories: [], transactions: [] };
+  return {
+    ...summary!,
+    total: { ars: 0, usd: 0 },
+    categories: [],
+    transactions: [],
+    plannedItems: [],
+  };
 }
 
 export async function loader({ params }: LoaderFunctionArgs) {
@@ -48,7 +60,12 @@ export async function loader({ params }: LoaderFunctionArgs) {
   if (!tripId || !exists) {
     throw new Response(`Trip not found: ${tripId}`, { status: 404 });
   }
-  return { trip: getTripFixture(tripId) };
+  // The master category list, for the planned-item form's optional
+  // category picker — a brand-new planned trip's own `categories`
+  // breakdown is empty by definition (no real spend yet), so it can't
+  // source the dropdown options the way an isolate-a-category button
+  // elsewhere does.
+  return { trip: getTripFixture(tripId), categories: FIXTURE_CATEGORIES };
 }
 
 export const meta: MetaFunction<typeof loader> = ({ loaderData }) =>
@@ -71,7 +88,7 @@ export function ErrorBoundary() {
 }
 
 export default function AdminTrip() {
-  const { trip } = useLoaderData<typeof loader>();
+  const { trip, categories } = useLoaderData<typeof loader>();
   const { formatMessage, locale } = useIntl();
   const [showUsd, setShowUsd] = useState(false);
   const hasData = trip.categories.length > 0;
@@ -80,6 +97,66 @@ export default function AdminTrip() {
     trip.categories,
     trip.id
   );
+
+  // Phase K (finance-frontend.md §15) — against fixtures only, same as
+  // every prior phase: add/edit/delete mutate local state, nothing
+  // persists past a refresh. Real persistence is Phase C's job, once
+  // the backend's planned-items endpoints exist.
+  const [plannedItems, setPlannedItems] = useState(trip.plannedItems);
+  const [newDescription, setNewDescription] = useState('');
+  const [newAmount, setNewAmount] = useState('');
+  const [newCategoryId, setNewCategoryId] = useState('');
+
+  // Same "adjust state during render" reset as useCategoryIsolation
+  // (above) — the route component doesn't remount when navigating from
+  // one trip to another, so without this, Bariloche's (empty) planned
+  // items would silently carry over onto Mendoza's page. Adjusted
+  // during render, not in an effect, for the same reason documented in
+  // use-category-isolation.ts.
+  const [lastSeenTripId, setLastSeenTripId] = useState(trip.id);
+  if (trip.id !== lastSeenTripId) {
+    setLastSeenTripId(trip.id);
+    setPlannedItems(trip.plannedItems);
+    setNewDescription('');
+    setNewAmount('');
+    setNewCategoryId('');
+  }
+
+  const showPlanning =
+    plannedItems.length > 0 || trip.status === 'planned' || trip.status === 'active';
+
+  function getPlannedCategoryName(categoryId: string): string {
+    return categories.find((category) => category.id === categoryId)?.name ?? categoryId;
+  }
+
+  function handleAddPlannedItem(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const description = newDescription.trim();
+    const ars = Number(newAmount);
+    if (!description || !Number.isFinite(ars) || ars <= 0) return;
+
+    const item: PlannedItem = {
+      id: crypto.randomUUID(),
+      description,
+      estimatedAmount: { ars, usd: 0 },
+      categoryId: newCategoryId || null,
+      done: false,
+    };
+    setPlannedItems((items) => [...items, item]);
+    setNewDescription('');
+    setNewAmount('');
+    setNewCategoryId('');
+  }
+
+  function togglePlannedItemDone(itemId: string) {
+    setPlannedItems((items) =>
+      items.map((item) => (item.id === itemId ? { ...item, done: !item.done } : item))
+    );
+  }
+
+  function deletePlannedItem(itemId: string) {
+    setPlannedItems((items) => items.filter((item) => item.id !== itemId));
+  }
   const displayedTotal = activeCategory ? activeCategory.total : trip.total;
   const visibleTransactions = activeCategoryId
     ? trip.transactions.filter((tx) => tx.categoryId === activeCategoryId)
@@ -166,6 +243,106 @@ export default function AdminTrip() {
           </p>
         )}
       </header>
+
+      {showPlanning && (
+        <section className={getClasses('planning')} aria-labelledby="planning-heading">
+          <h2 id="planning-heading" className={getClasses('section-title')}>
+            <FormattedMessage id="ADMIN_TRIP_PLANNING_HEADING" />
+          </h2>
+          {plannedItems.length > 0 && (
+            <ul className={getClasses('planned-list')}>
+              {plannedItems.map((item) => (
+                <li key={item.id} className={getClasses('planned-item', { done: item.done })}>
+                  <label className={getClasses('planned-item-label')}>
+                    <input
+                      type="checkbox"
+                      checked={item.done}
+                      onChange={() => togglePlannedItemDone(item.id)}
+                    />
+                    <span className={getClasses('planned-item-description')}>
+                      {item.description}
+                    </span>
+                    {item.categoryId && (
+                      <span className={getClasses('planned-item-category')}>
+                        {getCategoryLabel(
+                          item.categoryId,
+                          getPlannedCategoryName(item.categoryId),
+                          formatMessage
+                        )}
+                      </span>
+                    )}
+                  </label>
+                  <span className={getClasses('planned-item-amount')}>
+                    {formatArs(item.estimatedAmount.ars)}
+                  </span>
+                  <button
+                    type="button"
+                    className={getClasses('planned-item-delete')}
+                    onClick={() => deletePlannedItem(item.id)}
+                    aria-label={formatMessage(
+                      { id: 'ADMIN_TRIP_DELETE_PLANNED_ITEM' },
+                      { description: item.description }
+                    )}
+                  >
+                    <span aria-hidden="true">×</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          <form className={getClasses('planned-item-form')} onSubmit={handleAddPlannedItem}>
+            <label className={getClasses('planned-item-form-field')}>
+              <span className={getClasses('planned-item-form-label')}>
+                <FormattedMessage id="ADMIN_TRIP_PLANNED_ITEM_DESCRIPTION_LABEL" />
+              </span>
+              <input
+                type="text"
+                className={getClasses('planned-item-form-input')}
+                value={newDescription}
+                onChange={(event) => setNewDescription(event.target.value)}
+              />
+            </label>
+            <label className={getClasses('planned-item-form-field')}>
+              <span className={getClasses('planned-item-form-label')}>
+                <FormattedMessage id="ADMIN_TRIP_PLANNED_ITEM_AMOUNT_LABEL" />
+              </span>
+              <input
+                type="number"
+                inputMode="numeric"
+                min="0"
+                step="1"
+                className={getClasses('planned-item-form-input')}
+                value={newAmount}
+                onChange={(event) => setNewAmount(event.target.value)}
+              />
+            </label>
+            <label className={getClasses('planned-item-form-field')}>
+              <span className={getClasses('planned-item-form-label')}>
+                <FormattedMessage id="ADMIN_TRIP_PLANNED_ITEM_CATEGORY_LABEL" />
+              </span>
+              <select
+                className={getClasses('planned-item-form-input')}
+                value={newCategoryId}
+                onChange={(event) => setNewCategoryId(event.target.value)}
+              >
+                <option value="">{formatMessage({ id: 'ADMIN_TRIP_NO_CATEGORY' })}</option>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {getCategoryLabel(category.id, category.name, formatMessage)}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button
+              type="submit"
+              className={getClasses('planned-item-form-submit')}
+              disabled={!newDescription.trim() || !newAmount}
+            >
+              <FormattedMessage id="ADMIN_TRIP_ADD_PLANNED_ITEM" />
+            </button>
+          </form>
+        </section>
+      )}
 
       {!hasData ? (
         // No "yet" — unlike a month/year, which is always either the

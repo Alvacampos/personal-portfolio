@@ -32,7 +32,7 @@
   {
     "name": "total CSS (all route stylesheets, public + /admin)",
     "path": "build/client/assets/style-*.css",
-    "limit": "22.5 KB",
+    "limit": "23.5 KB",
     "gzip": true
   },
   {
