@@ -8,64 +8,120 @@
 
 .admin-calendar-route__header {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-8);
-  text-align: center;
-}
-
-.admin-calendar-route__month-nav {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  justify-content: space-between;
   gap: var(--space-16);
 }
 
-.admin-calendar-route__month-nav-arrow {
+.admin-calendar-route__title {
+  font-size: var(--font-24);
+  margin: 0;
+}
+
+.admin-calendar-route__date-jump {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.admin-calendar-route__date-jump-label {
+  font-size: var(--font-14);
+  color: var(--fg-muted);
+}
+
+.admin-calendar-route__date-jump-input {
+  height: var(--space-40);
+  padding: 0 var(--space-12);
+  border-radius: var(--border-6);
+  border: 1px solid var(--border-default);
+  background-color: var(--bg-surface);
+  color: var(--fg-base);
+  font-size: var(--font-14);
+  cursor: pointer;
+}
+
+.admin-calendar-route__date-jump-input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* react-day-picker renders a real <table> (MonthGrid) inside this div —
+ * restyled entirely through its `classNames` prop rather than the
+ * package's own stylesheet, so it reads as this app's own component. */
+.admin-calendar-route__picker {
+  width: 100%;
+}
+
+.admin-calendar-route__months {
+  position: relative;
+}
+
+.admin-calendar-route__month {
+  width: 100%;
+}
+
+/* react-day-picker renders Nav (the prev/next pair) as Month's sibling,
+ * not flanking the caption directly — pin it over the top of the
+ * caption row instead of stacking it as its own line above. */
+.admin-calendar-route__nav {
+  position: absolute;
+  inset: 0 0 auto;
+  display: flex;
+  justify-content: space-between;
+  /* Let clicks reach the caption's row underneath outside the buttons. */
+  pointer-events: none;
+}
+
+.admin-calendar-route__caption {
+  padding-top: var(--space-8);
+  text-align: center;
+}
+
+.admin-calendar-route__caption-label {
+  font-size: var(--font-20);
+  font-weight: var(--weight-700);
+  text-transform: capitalize;
+}
+
+.admin-calendar-route__nav-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   /* 44px touch-target floor (docs/finance-frontend.md §3). */
   min-width: 44px;
   min-height: 44px;
-  font-size: var(--font-24);
   color: var(--fg-muted);
-  text-decoration: none;
+  background: none;
+  border: none;
   border-radius: var(--border-8);
+  cursor: pointer;
+  pointer-events: auto;
 }
 
-.admin-calendar-route__month-nav-arrow:hover,
-.admin-calendar-route__month-nav-arrow:focus-visible {
+.admin-calendar-route__nav-button:hover,
+.admin-calendar-route__nav-button:focus-visible {
   color: var(--fg-base);
   background: var(--bg-elevated);
 }
 
-.admin-calendar-route__month-title {
-  font-size: var(--font-24);
-  margin: 0;
-  min-width: 220px;
+.admin-calendar-route__nav-button[aria-disabled='true'] {
+  color: var(--border-default);
+  cursor: default;
+  pointer-events: none;
+}
+
+.admin-calendar-route__chevron {
+  width: 1em;
+  height: 1em;
+  fill: currentcolor;
 }
 
 .admin-calendar-route__grid {
   width: 100%;
+  margin-top: var(--space-8);
   border-collapse: collapse;
   table-layout: fixed;
-}
-
-/* Visually hidden but exposed to assistive tech — same technique as
- * the yearly view's __monthly-table. The <h1> above already shows the
- * same month/year to sighted users; a screen reader landing inside
- * table navigation still needs the caption. */
-.admin-calendar-route__grid-caption {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-  border: 0;
 }
 
 .admin-calendar-route__weekday {
@@ -76,35 +132,16 @@
   text-align: center;
 }
 
-.admin-calendar-route__day-cell {
+.admin-calendar-route__day {
   padding: 2px;
   text-align: center;
   vertical-align: middle;
 }
 
-/* Compound selector, not `.admin-calendar-route__day-cell--blank` —
- * getClassMaker's object-modifier form attaches the modifier to the
- * bare block, not the element (TECH-DEBT.md T19). */
-.admin-calendar-route__day-cell.admin-calendar-route--blank {
-  background: none;
-}
-
-.admin-calendar-route__day-number {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  aspect-ratio: 1;
-  color: var(--fg-muted);
-  font-size: var(--font-14);
-}
-
 .admin-calendar-route__day-button {
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: var(--space-4);
   width: 100%;
   aspect-ratio: 1;
   /* Comfortably above the 44px touch-target floor at any reasonable
@@ -125,16 +162,33 @@
   background: var(--bg-elevated);
 }
 
-.admin-calendar-route__day-button.admin-calendar-route--active {
+.admin-calendar-route__day--today .admin-calendar-route__day-button {
+  border-color: var(--fg-muted);
+}
+
+.admin-calendar-route__day--selected .admin-calendar-route__day-button {
   border-color: var(--accent);
+  border-width: 2px;
   background: var(--bg-elevated);
 }
 
-.admin-calendar-route__day-marker {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--accent);
+/* Amount-based spend tiers — the "color mark on dates with expenses,
+ * similar to airline calendars" request. Compound selectors, not
+ * `.admin-calendar-route__day-button--tier-*` — getClassMaker's
+ * modifier form is applied to the <td> (day), not the <button> inside
+ * it, since react-day-picker's `modifiersClassNames` only targets the
+ * Day element. */
+.admin-calendar-route__day--tier-low .admin-calendar-route__day-button {
+  background: color-mix(in srgb, var(--accent) 12%, var(--bg-surface));
+}
+
+.admin-calendar-route__day--tier-mid .admin-calendar-route__day-button {
+  background: color-mix(in srgb, var(--accent) 30%, var(--bg-surface));
+}
+
+.admin-calendar-route__day--tier-high .admin-calendar-route__day-button {
+  background: color-mix(in srgb, var(--accent) 55%, var(--bg-surface));
+  color: var(--bg-base);
 }
 
 .admin-calendar-route__section-title {
@@ -145,6 +199,10 @@
 .admin-calendar-route__day-detail {
   border-top: 1px solid var(--border-default);
   padding-top: var(--space-20);
+}
+
+.admin-calendar-route__empty-state {
+  color: var(--fg-muted);
 }
 
 .admin-calendar-route__transaction-list {

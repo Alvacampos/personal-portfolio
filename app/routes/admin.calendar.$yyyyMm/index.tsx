@@ -1,18 +1,25 @@
+import { format, parse, parseISO } from 'date-fns';
 import { useState } from 'react';
+import { DayFlag, DayPicker, SelectionState, UI } from 'react-day-picker';
+import { es as dayPickerEs } from 'react-day-picker/locale';
 import { FormattedMessage, useIntl } from 'react-intl';
 import type { LoaderFunctionArgs, MetaFunction } from 'react-router';
-import { isRouteErrorResponse, Link, useLoaderData, useRouteError } from 'react-router';
+import {
+  isRouteErrorResponse,
+  Link,
+  useLoaderData,
+  useNavigate,
+  useRouteError,
+} from 'react-router';
 
 import Card from '~/components/Card';
 import type { Transaction } from '~/data/admin-schema';
 import type { Locale } from '~/intl';
 import { adminMeta } from '~/utils/admin-meta';
-import { buildCalendarWeeks, getWeekdayLabels } from '~/utils/calendar-grid';
-import { getDateFnsLocale } from '~/utils/date-fns-locale';
 import { formatDayLabel } from '~/utils/format-day-label';
 import { formatArs } from '~/utils/format-money';
 import { formatMonthLabel } from '~/utils/format-month-label';
-import { getAdjacentMonths } from '~/utils/get-adjacent-months';
+import { getCalendarDayTiers } from '~/utils/get-calendar-day-tiers';
 import { getCategoryLabel } from '~/utils/get-category-label';
 import { getMonthFixture } from '~/utils/get-month-fixture';
 import { getClassMaker } from '~/utils/utils';
@@ -31,10 +38,7 @@ export async function loader({ params }: LoaderFunctionArgs) {
   if (!yyyyMm || !YEAR_MONTH_RE.test(yyyyMm)) {
     throw new Response(`Invalid month: ${yyyyMm}`, { status: 400 });
   }
-  return {
-    month: getMonthFixture(yyyyMm),
-    ...getAdjacentMonths(yyyyMm),
-  };
+  return { month: getMonthFixture(yyyyMm) };
 }
 
 export const meta: MetaFunction<typeof loader> = ({ loaderData }) =>
@@ -59,10 +63,6 @@ export function ErrorBoundary() {
   );
 }
 
-// Groups a month's transactions by day — the calendar's whole
-// organizing axis, unlike month/year/trip's category-first views
-// (docs/finance-frontend.md §14: "no isolate-a-category interaction
-// here — a calendar's organizing axis is the day, not the category").
 function groupByDay(transactions: Transaction[]): Map<string, Transaction[]> {
   const byDay = new Map<string, Transaction[]>();
   transactions.forEach((tx) => {
@@ -74,132 +74,119 @@ function groupByDay(transactions: Transaction[]): Map<string, Transaction[]> {
 }
 
 export default function AdminCalendar() {
-  const { month, prevMonth, nextMonth } = useLoaderData<typeof loader>();
+  const { month } = useLoaderData<typeof loader>();
   const { formatMessage, locale } = useIntl();
-  const [expandedDay, setExpandedDay] = useState<string | null>(null);
+  const navigate = useNavigate();
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
 
-  const dfLocale = getDateFnsLocale(locale as Locale);
-  const weeks = buildCalendarWeeks(month.month);
-  const weekdayLabels = getWeekdayLabels(dfLocale);
+  const monthDate = parse(month.month, 'yyyy-MM', new Date());
+  const tiers = getCalendarDayTiers(month.transactions);
   const transactionsByDay = groupByDay(month.transactions);
-  const expandedTransactions = expandedDay ? (transactionsByDay.get(expandedDay) ?? []) : [];
+  const selectedTransactions = selectedDay ? (transactionsByDay.get(selectedDay) ?? []) : [];
 
-  function toggleDay(iso: string) {
-    setExpandedDay((current) => (current === iso ? null : iso));
+  function handleMonthChange(newMonth: Date) {
+    navigate(`/admin/calendar/${format(newMonth, 'yyyy-MM')}`);
+  }
+
+  function handleSelect(date: Date | undefined) {
+    setSelectedDay(date ? format(date, 'yyyy-MM-dd') : null);
+  }
+
+  function handleDatePick(event: React.ChangeEvent<HTMLInputElement>) {
+    const iso = event.target.value;
+    if (!iso) return;
+    setSelectedDay(iso);
+    const targetMonth = iso.slice(0, 7);
+    if (targetMonth !== month.month) navigate(`/admin/calendar/${targetMonth}`);
   }
 
   return (
     <div className={getClasses()}>
       <header className={getClasses('header')}>
-        <div className={getClasses('month-nav')}>
-          <Link
-            to={`/admin/calendar/${prevMonth}`}
-            aria-label={formatMessage(
-              { id: 'ADMIN_PREV_MONTH' },
-              { month: formatMonthLabel(prevMonth, locale as Locale) }
-            )}
-            className={getClasses('month-nav-arrow')}
-          >
-            <span aria-hidden="true">‹</span>
-          </Link>
-          <h1 className={getClasses('month-title')}>
-            {formatMonthLabel(month.month, locale as Locale)}
-          </h1>
-          <Link
-            to={`/admin/calendar/${nextMonth}`}
-            aria-label={formatMessage(
-              { id: 'ADMIN_NEXT_MONTH' },
-              { month: formatMonthLabel(nextMonth, locale as Locale) }
-            )}
-            className={getClasses('month-nav-arrow')}
-          >
-            <span aria-hidden="true">›</span>
-          </Link>
-        </div>
+        <h1 className={getClasses('title')}>
+          <FormattedMessage id="ADMIN_NAV_CALENDAR" />
+        </h1>
+        <label className={getClasses('date-jump')}>
+          <span className={getClasses('date-jump-label')}>
+            <FormattedMessage id="ADMIN_CALENDAR_JUMP_TO_DATE_LABEL" />
+          </span>
+          <input
+            type="date"
+            className={getClasses('date-jump-input')}
+            onChange={handleDatePick}
+            value={selectedDay ?? ''}
+          />
+        </label>
       </header>
 
-      {/* A real, navigable data table — the grid itself is the content
-       * here, not a decorative chart with a hidden list bolted on the
-       * side (docs/finance-frontend.md §14). The caption stays visually
-       * hidden since the <h1> above already shows the same month/year
-       * to sighted users; a screen reader landing inside table
-       * navigation still gets it. */}
-      <table className={getClasses('grid')}>
-        <caption className={getClasses('grid-caption')}>
-          {formatMonthLabel(month.month, locale as Locale)}
-        </caption>
-        <thead>
-          <tr>
-            {weekdayLabels.map((label) => (
-              <th key={label} scope="col" className={getClasses('weekday')}>
-                {label}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {weeks.map((week, weekIndex) => (
-            <tr key={weekIndex}>
-              {week.map((day, dayIndex) => {
-                if (!day) {
-                  return (
-                    <td
-                      key={dayIndex}
-                      className={getClasses('day-cell', { blank: true })}
-                      aria-hidden="true"
-                    />
-                  );
-                }
-                const dayTransactions = transactionsByDay.get(day.iso) ?? [];
-                const hasData = dayTransactions.length > 0;
-                const isExpanded = expandedDay === day.iso;
-                return (
-                  <td key={day.iso} className={getClasses('day-cell')}>
-                    {hasData ? (
-                      <button
-                        type="button"
-                        className={getClasses('day-button', { active: isExpanded })}
-                        onClick={() => toggleDay(day.iso)}
-                        aria-expanded={isExpanded}
-                        aria-controls="calendar-day-detail"
-                        aria-label={formatDayLabel(day.iso, locale as Locale)}
-                      >
-                        <span aria-hidden="true">{day.dayOfMonth}</span>
-                        <span className={getClasses('day-marker')} aria-hidden="true" />
-                      </button>
-                    ) : (
-                      <span className={getClasses('day-number')}>{day.dayOfMonth}</span>
-                    )}
-                  </td>
-                );
-              })}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      {/* react-day-picker (docs/finance-tracker-ledger.md's "Phase I
+       * rebuilt on react-day-picker" 2026-09-27 entry has the reasoning)
+       * — renders a real <table>/<th>/<td> internally, restyled
+       * entirely through `classNames` to fit this
+       * app's BEM system rather than importing its own stylesheet.
+       * `modifiers`/`modifiersClassNames` color each day by its relative
+       * spend tier — the "airline calendar" request — on top of the
+       * library's own keyboard navigation and date selection. */}
+      <DayPicker
+        mode="single"
+        month={monthDate}
+        onMonthChange={handleMonthChange}
+        selected={selectedDay ? parseISO(selectedDay) : undefined}
+        onSelect={handleSelect}
+        weekStartsOn={1}
+        locale={locale === 'es' ? dayPickerEs : undefined}
+        modifiers={{ tierLow: tiers.low, tierMid: tiers.mid, tierHigh: tiers.high }}
+        modifiersClassNames={{
+          tierLow: getClasses('day', 'tier-low'),
+          tierMid: getClasses('day', 'tier-mid'),
+          tierHigh: getClasses('day', 'tier-high'),
+        }}
+        classNames={{
+          [UI.Root]: getClasses('picker'),
+          [UI.Months]: getClasses('months'),
+          [UI.Month]: getClasses('month'),
+          [UI.MonthCaption]: getClasses('caption'),
+          [UI.CaptionLabel]: getClasses('caption-label'),
+          [UI.Nav]: getClasses('nav'),
+          [UI.PreviousMonthButton]: getClasses('nav-button'),
+          [UI.NextMonthButton]: getClasses('nav-button'),
+          [UI.Chevron]: getClasses('chevron'),
+          [UI.MonthGrid]: getClasses('grid'),
+          [UI.Weekdays]: getClasses('weekdays'),
+          [UI.Weekday]: getClasses('weekday'),
+          [UI.Weeks]: getClasses('weeks'),
+          [UI.Week]: getClasses('week'),
+          [UI.Day]: getClasses('day'),
+          [UI.DayButton]: getClasses('day-button'),
+          [DayFlag.today]: getClasses('day', 'today'),
+          [SelectionState.selected]: getClasses('day', 'selected'),
+        }}
+      />
 
-      {expandedDay && (
-        <section
-          id="calendar-day-detail"
-          className={getClasses('day-detail')}
-          aria-labelledby="calendar-day-detail-heading"
-        >
+      {selectedDay && (
+        <section className={getClasses('day-detail')} aria-labelledby="calendar-day-detail-heading">
           <h2 id="calendar-day-detail-heading" className={getClasses('section-title')}>
             <FormattedMessage
               id="ADMIN_CALENDAR_DAY_HEADING"
-              values={{ date: formatDayLabel(expandedDay, locale as Locale) }}
+              values={{ date: formatDayLabel(selectedDay, locale as Locale) }}
             />
           </h2>
-          <div className={getClasses('transaction-list')}>
-            {expandedTransactions.map((tx) => (
-              <Card key={tx.id} title={tx.description}>
-                <p className={getClasses('transaction-meta')}>
-                  {getCategoryLabel(tx.categoryId, tx.categoryName, formatMessage)} · {tx.paidBy}
-                </p>
-                <p className={getClasses('transaction-amount')}>{formatArs(tx.amount.ars)}</p>
-              </Card>
-            ))}
-          </div>
+          {selectedTransactions.length === 0 ? (
+            <p className={getClasses('empty-state')} role="status">
+              <FormattedMessage id="ADMIN_CALENDAR_DAY_EMPTY" />
+            </p>
+          ) : (
+            <div className={getClasses('transaction-list')}>
+              {selectedTransactions.map((tx) => (
+                <Card key={tx.id} title={tx.description}>
+                  <p className={getClasses('transaction-meta')}>
+                    {getCategoryLabel(tx.categoryId, tx.categoryName, formatMessage)} · {tx.paidBy}
+                  </p>
+                  <p className={getClasses('transaction-amount')}>{formatArs(tx.amount.ars)}</p>
+                </Card>
+              ))}
+            </div>
+          )}
         </section>
       )}
     </div>
