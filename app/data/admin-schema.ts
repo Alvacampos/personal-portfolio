@@ -93,8 +93,9 @@ export const CategoriesResponseSchema = z.array(category);
 // Promoted here from "future, not v1" (backend kickoff §3.7/§6) now that
 // Phase F actually builds against it — same status/budget columns the
 // backend schema already carries from day one, even though the planning
-// UI itself (status: 'planned') stays a deliberate wait-and-see, not
-// built in this phase (finance-frontend.md §6).
+// UI itself (status: 'planned') stayed a deliberate wait-and-see until
+// Phase J (finance-frontend.md §6) added the read-only budget-vs-actual
+// comparison.
 const tripStatus = z.enum(['planned', 'active', 'completed']);
 
 const tripSummary = z.object({
@@ -105,6 +106,10 @@ const tripSummary = z.object({
   // end date yet, and a `planned` one might not either.
   endDate: isoDate.nullable(),
   status: tripStatus,
+  // Nullable — not every trip gets a budget set ahead of time (older
+  // completed trips especially), and "no budget" is a distinct, real
+  // state from "budget of zero" (Phase J, finance-frontend.md §6).
+  budget: moneyAmount.nullable(),
   total: moneyAmount,
 });
 

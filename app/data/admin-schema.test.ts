@@ -69,7 +69,15 @@ describe('admin API contract fixtures', () => {
 
   it('parses the trips list', () => {
     const data = parseTripsResponse(FIXTURE_TRIPS);
-    expect(data).toHaveLength(2);
+    expect(data).toHaveLength(3);
+  });
+
+  it('accepts both a set budget and a null one', () => {
+    const data = parseTripsResponse(FIXTURE_TRIPS);
+    // Bariloche has a budget; Cataratas del Iguazú deliberately doesn't
+    // (Phase J, finance-frontend.md §6) — both are valid, distinct states.
+    expect(data.find((trip) => trip.id === 'bariloche-2026-01')?.budget).not.toBeNull();
+    expect(data.find((trip) => trip.id === 'iguazu-2025-11')?.budget).toBeNull();
   });
 
   it('parses a populated trip and its categories sum to its total', () => {

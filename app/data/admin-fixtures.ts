@@ -327,10 +327,13 @@ export const FIXTURE_ANALYSIS_NOT_AVAILABLE: MonthlyAnalysisResponse = {
   reason: 'month_in_progress',
 };
 
-// Both trips are `completed` — v1 has no planning UI (finance-frontend.md
-// §6's wait-and-see decision), so a `planned` trip is a schema
-// possibility the backend supports, not something this fixture set
-// needs to demonstrate yet.
+// Three trips, three distinct budget states (Phase J,
+// finance-frontend.md §6): Bariloche came in over its budget (a real,
+// worth-surfacing case, not just the happy path); Cataratas del Iguazú
+// never had a budget set at all (an older trip, before budgeting was a
+// habit — `budget: null` is a distinct state from "budget of zero");
+// Mendoza is `planned` with nothing spent yet, the one status this
+// fixture set didn't cover before Phase J added the planning UI.
 export const FIXTURE_TRIPS: TripsResponse = [
   {
     id: 'bariloche-2026-01',
@@ -339,6 +342,7 @@ export const FIXTURE_TRIPS: TripsResponse = [
     endDate: '2026-01-17',
     status: 'completed',
     total: { ars: 450000, usd: 329 },
+    budget: { ars: 400000, usd: 293 },
   },
   {
     id: 'iguazu-2025-11',
@@ -347,6 +351,16 @@ export const FIXTURE_TRIPS: TripsResponse = [
     endDate: '2025-11-09',
     status: 'completed',
     total: { ars: 280000, usd: 204 },
+    budget: null,
+  },
+  {
+    id: 'mendoza-2026-11',
+    name: 'Mendoza',
+    startDate: '2026-11-20',
+    endDate: '2026-11-27',
+    status: 'planned',
+    total: { ars: 0, usd: 0 },
+    budget: { ars: 600000, usd: 440 },
   },
 ];
 
@@ -358,6 +372,7 @@ export const FIXTURE_TRIP: TripResponse = {
   endDate: '2026-01-17',
   status: 'completed',
   total: { ars: 450000, usd: 329 },
+  budget: { ars: 400000, usd: 293 },
   categories: [
     {
       categoryId: 'other',
@@ -459,6 +474,7 @@ export const FIXTURE_TRIP_EMPTY: TripResponse = {
   endDate: '2025-11-09',
   status: 'completed',
   total: { ars: 0, usd: 0 },
+  budget: null,
   categories: [],
   transactions: [],
 };

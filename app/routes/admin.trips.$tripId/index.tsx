@@ -86,6 +86,15 @@ export default function AdminTrip() {
   const dfLocale = getDateFnsLocale(locale as Locale);
   const ongoingLabel = formatMessage({ id: 'ADMIN_TRIP_ONGOING' });
 
+  // Always compared against the trip's own total, never `displayedTotal`
+  // — isolating a category swaps that to a category-scoped figure, but
+  // a budget is a whole-trip concept and shouldn't appear to change
+  // just because a category filter is active.
+  const { budget } = trip;
+  const isOverBudget = budget != null && trip.total.ars > budget.ars;
+  const budgetPercent =
+    budget && budget.ars > 0 ? Math.min(100, (trip.total.ars / budget.ars) * 100) : 0;
+
   return (
     <div className={getClasses()}>
       <Link to="/admin/trips" className={getClasses('back-link')}>
@@ -108,6 +117,28 @@ export default function AdminTrip() {
             <FormattedMessage id={showUsd ? 'ADMIN_TAP_FOR_ARS' : 'ADMIN_TAP_FOR_USD'} />
           </span>
         </button>
+        {budget && (
+          // Read-only planned-vs-actual (frontend §6, Phase J) — the
+          // real expense entries still only ever arrive via Telegram,
+          // this is display only, no editing.
+          <div className={getClasses('budget')}>
+            <p className={getClasses('budget-label')}>
+              <FormattedMessage id="ADMIN_TRIP_BUDGET" values={{ amount: formatArs(budget.ars) }} />
+            </p>
+            <div className={getClasses('budget-bar')} aria-hidden="true">
+              <div
+                className={getClasses('budget-bar-fill', { over: isOverBudget })}
+                style={{ width: `${budgetPercent}%` }}
+              />
+            </div>
+            <p className={getClasses('budget-delta', { over: isOverBudget })}>
+              <FormattedMessage
+                id={isOverBudget ? 'ADMIN_TRIP_BUDGET_OVER' : 'ADMIN_TRIP_BUDGET_LEFT'}
+                values={{ amount: formatArs(Math.abs(budget.ars - trip.total.ars)) }}
+              />
+            </p>
+          </div>
+        )}
         {activeCategory && (
           <p className={getClasses('active-category')}>
             <FormattedMessage

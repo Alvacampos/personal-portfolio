@@ -347,7 +347,7 @@ test.describe('Admin calendar view (/admin/calendar/:yyyyMm)', () => {
 });
 
 test.describe('Admin trips list (/admin/trips)', () => {
-  test('shows both trips and links to their detail pages', async ({ page }) => {
+  test('shows all three trips and links to their detail pages', async ({ page }) => {
     await page.goto('/admin/trips');
     await expect(page.getByRole('heading', { name: 'Trips', level: 1 })).toBeVisible();
     await expect(page.getByRole('link', { name: /Bariloche/ })).toHaveAttribute(
@@ -357,6 +357,10 @@ test.describe('Admin trips list (/admin/trips)', () => {
     await expect(page.getByRole('link', { name: /Cataratas del Iguazú/ })).toHaveAttribute(
       'href',
       '/admin/trips/iguazu-2025-11'
+    );
+    await expect(page.getByRole('link', { name: /Mendoza/ })).toHaveAttribute(
+      'href',
+      '/admin/trips/mendoza-2026-11'
     );
   });
 
@@ -370,6 +374,26 @@ test.describe('Admin trips list (/admin/trips)', () => {
     await expect(barilocheCard.getByText('Completed')).toBeVisible();
     await expect(barilocheCard.getByText('8 days')).toBeVisible();
     await expect(barilocheCard.getByText('Jan 10, 2026 – Jan 17, 2026')).toBeVisible();
+  });
+
+  test('a card with a budget shows it alongside its actual total; one without doesn’t', async ({
+    page,
+  }) => {
+    await page.goto('/admin/trips');
+    await expect(
+      page.getByRole('link', { name: /Bariloche/ }).getByText('Budget: $ 400.000')
+    ).toBeVisible();
+    await expect(
+      page.getByRole('link', { name: /Cataratas del Iguazú/ }).getByText(/Budget:/)
+    ).toHaveCount(0);
+  });
+
+  test('a planned trip shows its status badge and budget with a $0 actual', async ({ page }) => {
+    await page.goto('/admin/trips');
+    const mendozaCard = page.getByRole('link', { name: /Mendoza/ });
+    await expect(mendozaCard.getByText('Planned')).toBeVisible();
+    await expect(mendozaCard.getByText('$ 0', { exact: true })).toBeVisible();
+    await expect(mendozaCard.getByText('Budget: $ 600.000')).toBeVisible();
   });
 
   test('clicking a trip navigates to its detail page', async ({ page }) => {
@@ -435,6 +459,39 @@ test.describe('Admin trip detail (/admin/trips/:tripId)', () => {
     await expect(page.getByText('Hotel — 7 nights')).toHaveCount(0);
     // Category total (150,000 ARS), not the trip total (450,000).
     await expect(page.locator('.admin-trip-route__total')).toContainText('150.000');
+  });
+
+  test('a trip over its budget shows the over-budget message, unaffected by category isolation', async ({
+    page,
+  }) => {
+    await page.goto('/admin/trips/bariloche-2026-01');
+    await expect(page.getByText('Budget: $ 400.000')).toBeVisible();
+    await expect(page.getByText('$ 50.000 over budget')).toBeVisible();
+
+    // Isolating a category swaps the big total to a category-scoped
+    // figure (150,000) — the budget comparison is a whole-trip concept
+    // and must keep comparing against the trip's actual total (450,000),
+    // not silently recompute against the filtered total.
+    await page
+      .getByRole('button', { name: /Transport/ })
+      .first()
+      .click();
+    await expect(page.getByText('$ 50.000 over budget')).toBeVisible();
+  });
+
+  test('a planned trip with nothing spent yet shows its full budget as remaining', async ({
+    page,
+  }) => {
+    await page.goto('/admin/trips/mendoza-2026-11');
+    await expect(page.getByRole('heading', { name: 'Mendoza', level: 1 })).toBeVisible();
+    await expect(page.getByText('Budget: $ 600.000')).toBeVisible();
+    await expect(page.getByText('$ 600.000 left')).toBeVisible();
+    await expect(page.getByText(/nothing logged for this trip\./i)).toBeVisible();
+  });
+
+  test('a trip with no budget set shows no budget comparison', async ({ page }) => {
+    await page.goto('/admin/trips/iguazu-2025-11');
+    await expect(page.getByText(/^Budget:/)).toHaveCount(0);
   });
 
   test('back link returns to the trips list', async ({ page }) => {

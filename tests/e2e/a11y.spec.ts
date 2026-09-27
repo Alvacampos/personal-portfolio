@@ -27,6 +27,10 @@ const ROUTES = [
   { name: 'admin-calendar', path: '/admin/calendar/2026-08' },
   { name: 'admin-trips-index', path: '/admin/trips' },
   { name: 'admin-trip-detail', path: '/admin/trips/bariloche-2026-01' },
+  // A separate route: budget-vs-actual is new UI (Phase J) and this is
+  // the one fixture trip that renders it in its "nothing spent yet"
+  // shape, not just Bariloche's populated-and-over-budget one.
+  { name: 'admin-trip-planned', path: '/admin/trips/mendoza-2026-11' },
 ];
 
 const BLOCKING_IMPACTS = ['serious', 'critical'];

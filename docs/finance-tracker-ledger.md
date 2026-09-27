@@ -39,24 +39,63 @@
 
 ### Frontend (this repo, `/admin/*`)
 
-| Phase                                   | Status | Notes                                                                                                                                                                                                                                                                                                                                                                                                     |
-| --------------------------------------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Phase A — Static shell against fixtures | done   | Routes, `admin` layout + nav, month view (header/categories/transactions/analysis) against fixtures, e2e-covered. Chart + isolate interaction is Phase B.                                                                                                                                                                                                                                                 |
-| Phase B — Charts (pie + category list)  | done   | Recharts pie chart + category-list isolate/filter interaction, e2e-covered. Bar chart is Phase D.                                                                                                                                                                                                                                                                                                         |
-| Phase C — Auth + live integration       | open   | Blocked on backend Phase 5 existing for real, but the shell can be built against fixtures first.                                                                                                                                                                                                                                                                                                          |
-| Phase D — Yearly view                   | done   | Bar chart + same pie/category isolate pattern as month view, e2e-covered. Same-year-over-year comparison remains a fast-follow, not v1.                                                                                                                                                                                                                                                                   |
-| Phase E — Claude analysis section       | open   | Blocked on backend Phase 4C.                                                                                                                                                                                                                                                                                                                                                                              |
-| Phase F — Vacations                     | done   | Trips list + detail (pie/category isolate, no analysis), e2e-covered. Trip/status/budget schema promoted from "future, not v1" to real endpoints — planning UI still deliberately deferred (frontend §6).                                                                                                                                                                                                 |
-| Phase G — Portfolio-parity chrome       | done   | `AdminNavBar` (side rail desktop / bottom tabs mobile) + react-intl retrofit of Phases A–F, e2e + a11y-covered. PR #334.                                                                                                                                                                                                                                                                                  |
-| Phase H — Home                          | done   | Repurposes `/admin/dashboard` into a real landing page — this year's months as cards, newest first, `getYearFixture` shared with the yearly view (frontend §13). e2e + a11y-covered. PR #335 (also folded in a real-browser review round: 4 root-cause layout bugs, category-name i18n, trip status/duration badges, Year click-to-month).                                                                |
-| Phase I — Calendar                      | done   | Day-by-day view of a month. Shipped once as a hand-rolled `<table>` (PR #336), then rebuilt on `react-day-picker` the same day per user override — real keyboard/prev-next navigation, a native date-jump input, and amount-tier day coloring ("airline calendar" style). No new backend surface, fully derived from the month endpoint's existing `occurredOn` field (frontend §14). e2e + a11y-covered. |
-| Phase J — Vacation planning UI          | open   | Decided: read-only planned-vs-actual (frontend §6) — `budget` shown alongside actual total, no write endpoints/forms.                                                                                                                                                                                                                                                                                     |
+| Phase                                   | Status | Notes                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| --------------------------------------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Phase A — Static shell against fixtures | done   | Routes, `admin` layout + nav, month view (header/categories/transactions/analysis) against fixtures, e2e-covered. Chart + isolate interaction is Phase B.                                                                                                                                                                                                                                                                                                |
+| Phase B — Charts (pie + category list)  | done   | Recharts pie chart + category-list isolate/filter interaction, e2e-covered. Bar chart is Phase D.                                                                                                                                                                                                                                                                                                                                                        |
+| Phase C — Auth + live integration       | open   | Blocked on backend Phase 5 existing for real, but the shell can be built against fixtures first.                                                                                                                                                                                                                                                                                                                                                         |
+| Phase D — Yearly view                   | done   | Bar chart + same pie/category isolate pattern as month view, e2e-covered. Same-year-over-year comparison remains a fast-follow, not v1.                                                                                                                                                                                                                                                                                                                  |
+| Phase E — Claude analysis section       | open   | Blocked on backend Phase 4C.                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| Phase F — Vacations                     | done   | Trips list + detail (pie/category isolate, no analysis), e2e-covered. Trip/status schema promoted from "future, not v1" to real endpoints — the budget half of that schema followed later as Phase J (frontend §6).                                                                                                                                                                                                                                      |
+| Phase G — Portfolio-parity chrome       | done   | `AdminNavBar` (side rail desktop / bottom tabs mobile) + react-intl retrofit of Phases A–F, e2e + a11y-covered. PR #334.                                                                                                                                                                                                                                                                                                                                 |
+| Phase H — Home                          | done   | Repurposes `/admin/dashboard` into a real landing page — this year's months as cards, newest first, `getYearFixture` shared with the yearly view (frontend §13). e2e + a11y-covered. PR #335 (also folded in a real-browser review round: 4 root-cause layout bugs, category-name i18n, trip status/duration badges, Year click-to-month).                                                                                                               |
+| Phase I — Calendar                      | done   | Day-by-day view of a month. Shipped once as a hand-rolled `<table>` (PR #336), then rebuilt on `react-day-picker` the same day per user override — real keyboard/prev-next navigation, a native date-jump input, and amount-tier day coloring ("airline calendar" style). No new backend surface, fully derived from the month endpoint's existing `occurredOn` field (frontend §14). e2e + a11y-covered.                                                |
+| Phase J — Vacation planning UI          | done   | Read-only planned-vs-actual (frontend §6) — `budget` added to the trip schema (nullable — not every trip has one), shown alongside the trip's actual total with a progress bar and an over/under-budget delta. No write endpoints/forms. New `planned`-status fixture trip (the one status this fixture set didn't cover before) demonstrates a budget with nothing spent yet; `active` remains untested — no fixture needed it yet. e2e + a11y-covered. |
 
 ## Decision log
 
 Newest first. Each entry: what was decided or tried, and why — especially
 the "we tried X and backed out" entries, which are the ones worth having a
 record of.
+
+### 2026-09-27 — Phase J shipped: budget-vs-actual on the trip detail view
+
+Picked up right after Phase I merged, per the user's "keep working on
+the frontend, backend last" call — Phase J was the only frontend phase
+left that isn't blocked on a real backend (C and E both need backend
+phases that don't exist yet).
+
+`budget` was already promised by an earlier comment in
+`admin-schema.ts` ("same status/budget columns the backend schema
+already carries") but had never actually been added — only `status`
+was. Added `budget: moneyAmount.nullable()` to `tripSummary` for real.
+Nullable, not optional-with-a-zero-default: a trip with no budget set
+and a trip with a zero budget are different, real states, and
+collapsing them would silently misreport "no budget" as "$0 planned."
+
+Rendered on `/admin/trips/:tripId` only when `budget` is set: the
+budget amount, a plain CSS progress bar (no chart library needed for
+one bar), and an over/under delta — always compared against the
+trip's own `total`, never the category-isolated `displayedTotal`, so
+isolating a category doesn't make the budget comparison appear to
+change. Also surfaced on the `/admin/trips` list cards, since seeing a
+planned trip's budget at a glance (instead of a bare "$0") is the
+actual point of a planning UI.
+
+Deliberately gave the "over budget" state no invented color — this
+palette has no warning/danger token, and the month view's own delta
+already established the precedent (its comment: "this repo's palette
+has no warning/danger token to reach for instead, and green would send
+exactly the wrong signal"). Over budget gets a neutral filled bar +
+bold text instead of a red one nobody reviewed against the theme.
+
+Fixture set gained a `planned`-status trip (Mendoza) — before this, no
+fixture anywhere exercised `planned` or `active`, even though both were
+schema-valid since Phase F. Also set Cataratas del Iguazú's `budget` to
+`null` (a trip with no budget ever set) and Bariloche's to a number
+below its actual spend (exercises the over-budget branch, not just the
+happy under-budget path) — three distinct budget states, not just one
+demo number repeated.
 
 ### 2026-09-27 — Phase I rebuilt on `react-day-picker` after user override
 

@@ -57,6 +57,58 @@
   color: var(--fg-muted);
 }
 
+.admin-trip-route__budget {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  width: 100%;
+  max-width: 280px;
+}
+
+.admin-trip-route__budget-label {
+  margin: 0;
+  font-size: var(--font-14);
+  color: var(--fg-muted);
+}
+
+.admin-trip-route__budget-bar {
+  width: 100%;
+  height: 6px;
+  border-radius: var(--border-10);
+  background: var(--bg-elevated);
+  overflow: hidden;
+}
+
+.admin-trip-route__budget-bar-fill {
+  height: 100%;
+  border-radius: var(--border-10);
+  background: var(--accent);
+}
+
+/* Same reasoning as the month view's over-last-month delta (see the
+ * comment there): this palette has no warning/danger token, and
+ * inventing an ad-hoc red risks clashing with the theme in ways that
+ * were never actually reviewed. "Over budget" gets a neutral, filled-up
+ * look plus bold text instead — the label already says the outcome.
+ * Compound selector, not `--budget-bar-fill--over` — getClassMaker's
+ * object-modifier form attaches the modifier to the bare block, not the
+ * element (TECH-DEBT.md T19). */
+.admin-trip-route__budget-bar-fill.admin-trip-route--over {
+  background: var(--fg-base);
+}
+
+.admin-trip-route__budget-delta {
+  margin: 0;
+  font-size: var(--font-12);
+  color: var(--fg-muted);
+}
+
+.admin-trip-route__budget-delta.admin-trip-route--over {
+  color: var(--fg-base);
+  font-weight: var(--weight-700);
+}
+
 .admin-trip-route__active-category {
   margin: 0;
   color: var(--fg-muted);
