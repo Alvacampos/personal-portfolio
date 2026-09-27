@@ -15,14 +15,10 @@ const getClasses = getClassMaker(BLOCK);
 
 // Text-only, deliberately — the public NavBar's icon+label bottom tabs
 // need real SVG source assets to add (AGENTS.md §7's SVGO/SVGR
-// pipeline), and sourcing four new icons is out of scope for "reuse the
+// pipeline), and sourcing new icons is out of scope for "reuse the
 // layout," not a shortcut on the actual ask. Same fixed side-rail
 // (desktop) / bottom-tab-bar (mobile) shape as NavBar, same $bp-*
 // breakpoint tokens, own content — matching finance-frontend.md §1.
-// Calendar isn't in this list yet — /admin/calendar doesn't exist until
-// Phase I (docs/finance-frontend.md §14). Add it here once that route
-// lands, same discipline as every earlier phase's nav (never link to a
-// route that isn't built).
 const NAV_LINKS = [
   {
     to: '/admin/dashboard',
@@ -30,6 +26,7 @@ const NAV_LINKS = [
     prefixes: ['/admin/dashboard', '/admin/month'],
   },
   { to: '/admin/year', labelId: 'ADMIN_NAV_YEAR', prefixes: ['/admin/year'] },
+  { to: '/admin/calendar', labelId: 'ADMIN_NAV_CALENDAR', prefixes: ['/admin/calendar'] },
   { to: '/admin/trips', labelId: 'ADMIN_NAV_TRIPS', prefixes: ['/admin/trips'] },
 ] as const;
 

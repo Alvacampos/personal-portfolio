@@ -24,6 +24,7 @@ const ROUTES = [
   { name: 'admin-home', path: '/admin/dashboard' },
   { name: 'admin-month', path: '/admin/month/2026-08' },
   { name: 'admin-year', path: '/admin/year/2025' },
+  { name: 'admin-calendar', path: '/admin/calendar/2026-08' },
   { name: 'admin-trips-index', path: '/admin/trips' },
   { name: 'admin-trip-detail', path: '/admin/trips/bariloche-2026-01' },
 ];
@@ -102,5 +103,12 @@ test.describe('Accessibility (axe)', () => {
       .first()
       .click();
     await expectNoBlockingViolations(page, '/admin/trips/bariloche-2026-01 (Transport isolated)');
+  });
+
+  test('admin-calendar (day expanded) has no serious or critical violations', async ({ page }) => {
+    await page.goto('/admin/calendar/2026-08');
+    await page.waitForLoadState('networkidle');
+    await page.locator('.admin-calendar-route__day-button').first().click();
+    await expectNoBlockingViolations(page, '/admin/calendar/2026-08 (day expanded)');
   });
 });

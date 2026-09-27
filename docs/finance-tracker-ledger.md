@@ -39,24 +39,44 @@
 
 ### Frontend (this repo, `/admin/*`)
 
-| Phase                                   | Status | Notes                                                                                                                                                                                                     |
-| --------------------------------------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Phase A — Static shell against fixtures | done   | Routes, `admin` layout + nav, month view (header/categories/transactions/analysis) against fixtures, e2e-covered. Chart + isolate interaction is Phase B.                                                 |
-| Phase B — Charts (pie + category list)  | done   | Recharts pie chart + category-list isolate/filter interaction, e2e-covered. Bar chart is Phase D.                                                                                                         |
-| Phase C — Auth + live integration       | open   | Blocked on backend Phase 5 existing for real, but the shell can be built against fixtures first.                                                                                                          |
-| Phase D — Yearly view                   | done   | Bar chart + same pie/category isolate pattern as month view, e2e-covered. Same-year-over-year comparison remains a fast-follow, not v1.                                                                   |
-| Phase E — Claude analysis section       | open   | Blocked on backend Phase 4C.                                                                                                                                                                              |
-| Phase F — Vacations                     | done   | Trips list + detail (pie/category isolate, no analysis), e2e-covered. Trip/status/budget schema promoted from "future, not v1" to real endpoints — planning UI still deliberately deferred (frontend §6). |
-| Phase G — Portfolio-parity chrome       | done   | `AdminNavBar` (side rail desktop / bottom tabs mobile) + react-intl retrofit of Phases A–F, e2e + a11y-covered. PR #334.                                                                                  |
-| Phase H — Home                          | done   | Repurposes `/admin/dashboard` into a real landing page — this year's months as cards, newest first, `getYearFixture` shared with the yearly view (frontend §13). e2e + a11y-covered.                      |
-| Phase I — Calendar                      | open   | New section (frontend §14) — no new backend surface needed.                                                                                                                                               |
-| Phase J — Vacation planning UI          | open   | Decided: read-only planned-vs-actual (frontend §6) — `budget` shown alongside actual total, no write endpoints/forms.                                                                                     |
+| Phase                                   | Status | Notes                                                                                                                                                                                                                                                                                                                                      |
+| --------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Phase A — Static shell against fixtures | done   | Routes, `admin` layout + nav, month view (header/categories/transactions/analysis) against fixtures, e2e-covered. Chart + isolate interaction is Phase B.                                                                                                                                                                                  |
+| Phase B — Charts (pie + category list)  | done   | Recharts pie chart + category-list isolate/filter interaction, e2e-covered. Bar chart is Phase D.                                                                                                                                                                                                                                          |
+| Phase C — Auth + live integration       | open   | Blocked on backend Phase 5 existing for real, but the shell can be built against fixtures first.                                                                                                                                                                                                                                           |
+| Phase D — Yearly view                   | done   | Bar chart + same pie/category isolate pattern as month view, e2e-covered. Same-year-over-year comparison remains a fast-follow, not v1.                                                                                                                                                                                                    |
+| Phase E — Claude analysis section       | open   | Blocked on backend Phase 4C.                                                                                                                                                                                                                                                                                                               |
+| Phase F — Vacations                     | done   | Trips list + detail (pie/category isolate, no analysis), e2e-covered. Trip/status/budget schema promoted from "future, not v1" to real endpoints — planning UI still deliberately deferred (frontend §6).                                                                                                                                  |
+| Phase G — Portfolio-parity chrome       | done   | `AdminNavBar` (side rail desktop / bottom tabs mobile) + react-intl retrofit of Phases A–F, e2e + a11y-covered. PR #334.                                                                                                                                                                                                                   |
+| Phase H — Home                          | done   | Repurposes `/admin/dashboard` into a real landing page — this year's months as cards, newest first, `getYearFixture` shared with the yearly view (frontend §13). e2e + a11y-covered. PR #335 (also folded in a real-browser review round: 4 root-cause layout bugs, category-name i18n, trip status/duration badges, Year click-to-month). |
+| Phase I — Calendar                      | done   | Day-by-day view of a month, built as a real `<table>` (caption + column headers), tap-a-day expands its transactions inline — no new backend surface, fully derived from the month endpoint's existing `occurredOn` field (frontend §14). e2e + a11y-covered.                                                                              |
+| Phase J — Vacation planning UI          | open   | Decided: read-only planned-vs-actual (frontend §6) — `budget` shown alongside actual total, no write endpoints/forms.                                                                                                                                                                                                                      |
 
 ## Decision log
 
 Newest first. Each entry: what was decided or tried, and why — especially
 the "we tried X and backed out" entries, which are the ones worth having a
 record of.
+
+### 2026-09-27 — Phase I (Calendar) built and shipped
+
+Built per docs/finance-frontend.md §14 as specced, no open forks. A real
+`<table>` (caption + `<th scope="col">` weekday headers) rather than a
+decorative grid with a bolted-on accessible list — the grid itself is
+the content here, unlike the bar/pie charts. Monday-start weeks for
+both locales (the household this app serves expects that regardless of
+displayed language; §14 didn't specify either way, and switching the
+grid's own shape by locale seemed more inconsistent than useful).
+
+Extracted three things that would otherwise have been duplicated a
+third time: `getMonthFixture` and the prev/next-month calc
+(`getAdjacentMonths`) out of the month route (now shared with
+Calendar), and `capitalizeFirst` out of `formatDateRange` into its own
+util so the calendar day heading could reuse the same
+standalone-date-label capitalization `formatDayLabel` needed.
+
+Same recurring CSS-budget bump as every phase that adds `/admin`
+stylesheets (21 → 22.5 KB) — expected, not a new finding.
 
 ### 2026-09-27 — Year view: click-to-month, resolved via a genuine fork
 

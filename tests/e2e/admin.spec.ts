@@ -261,6 +261,71 @@ test.describe('Admin year view (/admin/year/:year)', () => {
   });
 });
 
+test.describe('Admin calendar index (/admin/calendar)', () => {
+  test('redirects to the current month', async ({ page }) => {
+    await page.goto('/admin/calendar');
+    await expect(page).toHaveURL(/\/admin\/calendar\/\d{4}-\d{2}$/);
+  });
+});
+
+test.describe('Admin calendar view (/admin/calendar/:yyyyMm)', () => {
+  test('shows a full month grid with a marker on each day that has transactions', async ({
+    page,
+  }) => {
+    await page.goto('/admin/calendar/2026-08');
+    await page.waitForLoadState('networkidle');
+    await expect(page.getByRole('heading', { name: 'August 2026', level: 1 })).toBeVisible();
+    // Real <table> semantics — a screen reader gets weekday column
+    // headers and a caption, not div soup (docs/finance-frontend.md §14).
+    await expect(page.getByRole('columnheader', { name: 'Mon' })).toBeVisible();
+    await expect(page.locator('.admin-calendar-route__grid caption')).toHaveText('August 2026');
+    // FIXTURE_MONTH (admin-fixtures.ts) has 10 transactions on 10 distinct days.
+    await expect(page.locator('.admin-calendar-route__day-button')).toHaveCount(10);
+  });
+
+  test('tapping a marked day expands its transactions; tapping again collapses', async ({
+    page,
+  }) => {
+    await page.goto('/admin/calendar/2026-08');
+    await page.waitForLoadState('networkidle');
+    const aug1 = page.getByRole('button', { name: 'Aug 1, 2026' });
+    await expect(aug1).toHaveAttribute('aria-expanded', 'false');
+
+    await aug1.click();
+    await expect(aug1).toHaveAttribute('aria-expanded', 'true');
+    await expect(page.getByRole('heading', { name: /Transactions — Aug 1, 2026/i })).toBeVisible();
+    await expect(page.getByText('SUBE top-up')).toBeVisible();
+    await expect(page.getByText('Transport · Partner')).toBeVisible();
+
+    await aug1.click();
+    await expect(aug1).toHaveAttribute('aria-expanded', 'false');
+    await expect(page.getByText('SUBE top-up')).toHaveCount(0);
+  });
+
+  test('a day with no transactions is not interactive', async ({ page }) => {
+    await page.goto('/admin/calendar/2026-08');
+    await page.waitForLoadState('networkidle');
+    // August 3rd has no transactions in the fixture.
+    await expect(page.getByRole('button', { name: /Aug 3, 2026/i })).toHaveCount(0);
+    await expect(page.getByText('3', { exact: true })).toBeVisible();
+  });
+
+  test('prev/next navigate between months', async ({ page }) => {
+    await page.goto('/admin/calendar/2026-08');
+    await page.getByRole('link', { name: /next month/i }).click();
+    await expect(page).toHaveURL('/admin/calendar/2026-09');
+    await page.getByRole('link', { name: /previous month/i }).click();
+    await expect(page).toHaveURL('/admin/calendar/2026-08');
+  });
+
+  test('renders the ErrorBoundary for a malformed month param', async ({ page }) => {
+    await page.goto('/admin/calendar/not-a-month', { waitUntil: 'domcontentloaded' });
+    await expect(page.getByText(/that month doesn't look right/i)).toBeVisible();
+    await page.getByRole('link', { name: /back to home/i }).click();
+    await expect(page).toHaveURL('/admin/dashboard');
+  });
+});
+
 test.describe('Admin trips list (/admin/trips)', () => {
   test('shows both trips and links to their detail pages', async ({ page }) => {
     await page.goto('/admin/trips');

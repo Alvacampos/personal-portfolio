@@ -5,6 +5,8 @@
   "ADMIN_BACK_TO_CURRENT_YEAR": "Volver al año actual",
   "ADMIN_BACK_TO_HOME": "Volver al inicio",
   "ADMIN_BACK_TO_TRIPS": "Volver a viajes",
+  "ADMIN_CALENDAR_DAY_HEADING": "Movimientos — {date}",
+  "ADMIN_CALENDAR_ERROR_BODY": "Se esperaba una URL como /admin/calendar/2026-08.",
   "ADMIN_CATEGORIES_HEADING": "Categorías",
   "ADMIN_CATEGORY_DINING_OUT": "Salidas a comer",
   "ADMIN_CATEGORY_GROCERIES": "Comestibles",

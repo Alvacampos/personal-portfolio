@@ -1,4 +1,4 @@
-import { addMonths, format, parse, parseISO } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { useState } from 'react';
 import { FormattedMessage, useIntl } from 'react-intl';
 import type { LoaderFunctionArgs, MetaFunction } from 'react-router';
@@ -6,15 +6,17 @@ import { isRouteErrorResponse, Link, useLoaderData, useRouteError } from 'react-
 
 import Card from '~/components/Card';
 import PieChart from '~/components/PieChart';
-import { FIXTURE_ANALYSIS_READY, FIXTURE_MONTH, FIXTURE_MONTH_EMPTY } from '~/data/admin-fixtures';
-import type { MonthlyAnalysisResponse, MonthResponse } from '~/data/admin-schema';
+import { FIXTURE_ANALYSIS_READY } from '~/data/admin-fixtures';
+import type { MonthlyAnalysisResponse } from '~/data/admin-schema';
 import type { Locale } from '~/intl';
 import { adminMeta } from '~/utils/admin-meta';
 import { getCategoryColor } from '~/utils/category-colors';
 import { getDateFnsLocale } from '~/utils/date-fns-locale';
 import { formatArs, formatUsd } from '~/utils/format-money';
 import { formatMonthLabel } from '~/utils/format-month-label';
+import { getAdjacentMonths } from '~/utils/get-adjacent-months';
 import { getCategoryLabel } from '~/utils/get-category-label';
+import { getMonthFixture } from '~/utils/get-month-fixture';
 import { useCategoryIsolation } from '~/utils/use-category-isolation';
 import { getClassMaker } from '~/utils/utils';
 
@@ -31,15 +33,10 @@ const YEAR_MONTH_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
 // (docs/finance-frontend.md §12) — only 2026-08 has "populated" data, so
 // navigating to any other month demonstrates the empty state (§4's
 // "blank slate, not a broken-looking chart" requirement) for free.
-// Phase C replaces both of these with a real fetch to
-// GET /api/months/{yyyy-mm} and GET /api/months/{yyyy-mm}/analysis
-// (docs/finance-tracker-backend-kickoff.md §6.1).
+// Phase C replaces this with a real fetch to
+// GET /api/months/{yyyy-mm}/analysis (docs/finance-tracker-backend-kickoff.md
+// §6.1). getMonthFixture itself is shared with the calendar view.
 const FIXTURE_MONTH_KEY = '2026-08';
-
-function getMonthFixture(yyyyMm: string): MonthResponse {
-  if (yyyyMm === FIXTURE_MONTH_KEY) return FIXTURE_MONTH;
-  return { ...FIXTURE_MONTH_EMPTY, month: yyyyMm };
-}
 
 function getAnalysisFixture(yyyyMm: string): MonthlyAnalysisResponse {
   if (yyyyMm === FIXTURE_MONTH_KEY) return FIXTURE_ANALYSIS_READY;
@@ -49,25 +46,15 @@ function getAnalysisFixture(yyyyMm: string): MonthlyAnalysisResponse {
   return { status: 'not_available', month: yyyyMm, reason: 'month_in_progress' };
 }
 
-function parseYearMonth(yyyyMm: string): Date {
-  return parse(yyyyMm, 'yyyy-MM', new Date());
-}
-
-function toYearMonth(monthDate: Date): string {
-  return format(monthDate, 'yyyy-MM');
-}
-
 export async function loader({ params }: LoaderFunctionArgs) {
   const yyyyMm = params.yyyyMm;
   if (!yyyyMm || !YEAR_MONTH_RE.test(yyyyMm)) {
     throw new Response(`Invalid month: ${yyyyMm}`, { status: 400 });
   }
-  const monthDate = parseYearMonth(yyyyMm);
   return {
     month: getMonthFixture(yyyyMm),
     analysis: getAnalysisFixture(yyyyMm),
-    prevMonth: toYearMonth(addMonths(monthDate, -1)),
-    nextMonth: toYearMonth(addMonths(monthDate, 1)),
+    ...getAdjacentMonths(yyyyMm),
   };
 }
 
