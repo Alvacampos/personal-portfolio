@@ -1,34 +1,34 @@
 {
-  "fetchTime": "2026-06-22T13:52:12.979Z",
-  "requestedUrl": "https://gonzalo-alvarez-campos-cv.com/skills",
-  "finalUrl": "https://gonzalo-alvarez-campos-cv.com/skills",
-  "lighthouseVersion": "13.4.0",
-  "commit": "9a29f4b",
+  "fetchTime": "2026-09-27T15:05:18.210Z",
+  "requestedUrl": "https://gonzalo-alvarez-campos-cv.com/education/degree",
+  "finalUrl": "https://gonzalo-alvarez-campos-cv.com/education/degree",
+  "lighthouseVersion": "13.4.1",
+  "commit": "a7d26b7",
   "categories": {
-    "performance": 0.81,
-    "accessibility": 0.96,
+    "performance": 0.91,
+    "accessibility": 1,
     "best-practices": 1,
     "seo": 1
   },
   "metrics": {
     "fcp": {
-      "displayValue": "2.3 s",
-      "numericValue": 2328.5872499999996,
-      "score": 0.73
+      "displayValue": "2.5 s",
+      "numericValue": 2537.9668,
+      "score": 0.66
     },
     "lcp": {
-      "displayValue": "4.5 s",
-      "numericValue": 4503.5872500000005,
-      "score": 0.37
+      "displayValue": "3.0 s",
+      "numericValue": 2969.4087000000004,
+      "score": 0.79
     },
     "si": {
-      "displayValue": "2.3 s",
-      "numericValue": 2328.5872499999996,
-      "score": 0.98
+      "displayValue": "2.5 s",
+      "numericValue": 2537.9668,
+      "score": 0.97
     },
     "tbt": {
       "displayValue": "0 ms",
-      "numericValue": 2,
+      "numericValue": 2.5,
       "score": 1
     },
     "cls": {
@@ -37,37 +37,32 @@
       "score": 1
     },
     "tti": {
-      "displayValue": "4.5 s",
-      "numericValue": 4511.0872500000005,
-      "score": 0.82
+      "displayValue": "3.0 s",
+      "numericValue": 2981.7427300000004,
+      "score": 0.96
     },
-    "ttfb": 69
+    "ttfb": 44
   },
   "failingAudits": [
     {
       "id": "first-contentful-paint",
       "title": "First Contentful Paint",
-      "score": 0.73
+      "score": 0.66
     },
     {
       "id": "largest-contentful-paint",
       "title": "Largest Contentful Paint",
-      "score": 0.37
+      "score": 0.79
     },
     {
       "id": "speed-index",
       "title": "Speed Index",
-      "score": 0.98
+      "score": 0.97
     },
     {
       "id": "interactive",
       "title": "Time to Interactive",
-      "score": 0.82
-    },
-    {
-      "id": "color-contrast",
-      "title": "Background and foreground colors do not have a sufficient contrast ratio.",
-      "score": 0
+      "score": 0.96
     },
     {
       "id": "unused-javascript",
@@ -77,6 +72,11 @@
     {
       "id": "cache-insight",
       "title": "Use efficient cache lifetimes",
+      "score": 0.5
+    },
+    {
+      "id": "legacy-javascript-insight",
+      "title": "Legacy JavaScript",
       "score": 0.5
     },
     {
