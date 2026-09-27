@@ -256,6 +256,18 @@ test.describe('Admin trips list (/admin/trips)', () => {
     );
   });
 
+  test('each card shows a status badge, duration, and a capitalized date range', async ({
+    page,
+  }) => {
+    await page.goto('/admin/trips');
+    const barilocheCard = page.getByRole('link', { name: /Bariloche/ });
+    // Jan 10 – Jan 17 inclusive is 8 calendar days (matches the 7-night
+    // hotel stay in the trip detail's own fixture transaction).
+    await expect(barilocheCard.getByText('Completed')).toBeVisible();
+    await expect(barilocheCard.getByText('8 days')).toBeVisible();
+    await expect(barilocheCard.getByText('Jan 10, 2026 – Jan 17, 2026')).toBeVisible();
+  });
+
   test('clicking a trip navigates to its detail page', async ({ page }) => {
     await page.goto('/admin/trips');
     await page.getByRole('link', { name: /Bariloche/ }).click();

@@ -64,12 +64,20 @@
 }
 
 .admin-nav-bar__nav-link {
-  /* No explicit `width` — `display: flex`'s outer display type is
-   * still block, so it already fills its container's width by
-   * default by auto-subtracting padding. An explicit `width: 100%`
-   * plus the desktop rule's horizontal padding (in default content-box
-   * sizing) rendered this 40px wider than the 200px rail — a real,
-   * measured overflow (240×40 in DevTools), not just a visual nit. */
+  /* `width: 100%` + `box-sizing: border-box` together, not either
+   * alone. At mobile, the parent <li> is `display: flex` — this link
+   * is a flex ITEM there, and a flex item's main-axis size defaults to
+   * its content size (shrink-to-fit), unlike a plain block box, which
+   * defaults to filling its container. Dropping `width: 100%` (an
+   * earlier attempt at fixing the desktop overflow below) silently
+   * broke mobile: every tab collapsed to its own text width and
+   * left-aligned instead of centering in its column. `border-box`
+   * makes `width: 100%` safe again at desktop, where this rule's own
+   * padding would otherwise push the box past the 200px rail (a real,
+   * measured 240×40 overflow caught in DevTools) — with border-box,
+   * the padding is subtracted from the 100% instead of added on top. */
+  box-sizing: border-box;
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;

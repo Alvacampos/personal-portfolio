@@ -58,6 +58,26 @@ Newest first. Each entry: what was decided or tried, and why — especially
 the "we tried X and backed out" entries, which are the ones worth having a
 record of.
 
+### 2026-09-27 — Trip cards: status + duration badges, capitalized dates
+
+The trips list cards showed only a name, date range, and total —
+`TripSummary.status` (`planned`/`active`/`completed`) has existed in the
+schema since Phase F but was never actually surfaced anywhere in the UI.
+Added a badge row to each card: a status badge (reusing the existing
+`ADMIN_TRIP_ONGOING` key for `active`, since that's the same "still
+happening" concept the date range's open-ended suffix already uses —
+not a separate, redundant key) and a computed duration badge ("8 days"
+for Bariloche's Jan 10–17 trip — inclusive day count, matching the 7
+_nights_ in its own fixture transaction). Card markup switched from
+`Card`'s `texts` prop to `children` to fit the badge row in.
+
+Also fixed: date ranges rendered with lowercase month abbreviations
+under Spanish ("ene 10, 2026") — correct running-prose Spanish, but a
+date range standing alone in a card reads as a label, not a sentence,
+so it wants the same capitalized look English gets for free ("Jan").
+`formatDateRange` now capitalizes both formatted date pieces
+regardless of locale.
+
 ### 2026-09-27 — A fifth `width: 100%` overflow, plus two copy fixes
 
 A follow-up round of screenshots (same DevTools-inspection method as the
@@ -66,8 +86,19 @@ previous entry describes, in a different element:
 `admin-nav-bar__nav-link`'s active state measured 240×40 in a 200px-wide
 rail — `width: 100%` (of the `<li>`) plus the desktop rule's `padding:
 12px 20px` (content-box, `<a>` tags don't get border-box by default)
-added up to 40px over. Fixed the same way: dropped the redundant
-`width: 100%`.
+added up to 40px over. First fix attempt dropped the redundant
+`width: 100%` (mirroring the `admin-layout__content` fix) — this
+compiled, typechecked, and looked right on desktop, but silently broke
+mobile: every tab collapsed to its own text width and left-aligned
+instead of centering in its column (caught in the very next screenshot
+round, not by test coverage). Root cause: at mobile the parent `<li>`
+is `display: flex`, making this link a flex **item**, whose main-axis
+size defaults to content-size absent an explicit width — unlike a
+plain block box (the desktop case), which defaults to filling its
+container. The actual fix needed both together: `width: 100%` restored
+_and_ `box-sizing: border-box` added, so the desktop padding is
+subtracted from the 100% instead of added on top, while mobile (zero
+horizontal padding there) is unaffected either way.
 
 Checked the rest of the admin CSS proactively for the same shape after
 finding this a second time — three other `width: 100%` + padding
@@ -75,7 +106,12 @@ combinations exist (the category-row buttons in month/year/trip
 detail), but those are `<button>` elements, which get `box-sizing:
 border-box` from the browser's default UA stylesheet, so they were
 never actually at risk. Confirmed empirically (computed `box-sizing:
-border-box` on one), not just assumed.
+border-box` on one), not just assumed. Also checked whether the public
+`NavBar` (the pattern `AdminNavBar` was copied from) has the identical
+bug — it does (224px in a 201px rail), but it's invisibly masked by
+`overflow: hidden` on `.navbar-component` (there for an unrelated
+reason). Logged as TECH-DEBT T20, not fixed — out of scope on the live
+public site.
 
 Two copy fixes from the same review round:
 

@@ -10,6 +10,8 @@ import type { Locale } from '~/intl';
 import { adminMeta } from '~/utils/admin-meta';
 import { formatDateRange } from '~/utils/format-date-range';
 import { formatArs } from '~/utils/format-money';
+import { getTripDurationLabel } from '~/utils/get-trip-duration-label';
+import { getTripStatusLabel } from '~/utils/get-trip-status-label';
 import { getClassMaker } from '~/utils/utils';
 
 import styles from './style.css?url';
@@ -69,13 +71,29 @@ export default function AdminTrips() {
                   to={`/admin/trips/${trip.id}`}
                   className={getClasses('card-link')}
                 >
-                  <Card
-                    title={trip.name}
-                    texts={[
-                      formatDateRange(trip.startDate, trip.endDate, locale as Locale, ongoingLabel),
-                      formatArs(trip.total.ars),
-                    ]}
-                  />
+                  <Card title={trip.name}>
+                    <div className={getClasses('badge-row')}>
+                      {/* getClasses('badge', { [trip.status]: true }) — the object-modifier
+                       * form attaches the modifier to the bare block, not the element
+                       * (TECH-DEBT.md T19), so the CSS uses a compound selector:
+                       * .admin-trips-route__badge.admin-trips-route--completed etc. */}
+                      <span className={getClasses('badge', { [trip.status]: true })}>
+                        {getTripStatusLabel(trip.status, formatMessage)}
+                      </span>
+                      <span className={getClasses('badge', { duration: true })}>
+                        {getTripDurationLabel(trip.startDate, trip.endDate, formatMessage)}
+                      </span>
+                    </div>
+                    <p className={getClasses('date-range')}>
+                      {formatDateRange(
+                        trip.startDate,
+                        trip.endDate,
+                        locale as Locale,
+                        ongoingLabel
+                      )}
+                    </p>
+                    <p className={getClasses('total')}>{formatArs(trip.total.ars)}</p>
+                  </Card>
                 </Link>
               ))}
             </div>
