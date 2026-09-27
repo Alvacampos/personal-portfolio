@@ -191,6 +191,54 @@
   color: var(--bg-base);
 }
 
+/* Key for the tier colors above — same three ratios, so a sighted user
+ * doesn't have to guess what the shades mean. Only rendered when the
+ * month actually has tiered days (see `hasTieredDays` in the route). */
+.admin-calendar-route__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-16);
+  margin: var(--space-12) 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--font-12);
+  color: var(--fg-muted);
+}
+
+.admin-calendar-route__legend-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+/* Each rule is fully self-contained (not a shared base + modifier) —
+ * getClassMaker's STRING-modifier form (used here, not the object form)
+ * replaces the base element class rather than appending to it, so a
+ * bare `.legend-swatch` rule would never actually apply. */
+.admin-calendar-route__legend-swatch--low {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: var(--border-4);
+  background: color-mix(in srgb, var(--accent) 12%, var(--bg-surface));
+}
+
+.admin-calendar-route__legend-swatch--mid {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: var(--border-4);
+  background: color-mix(in srgb, var(--accent) 30%, var(--bg-surface));
+}
+
+.admin-calendar-route__legend-swatch--high {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: var(--border-4);
+  background: color-mix(in srgb, var(--accent) 55%, var(--bg-surface));
+}
+
 .admin-calendar-route__section-title {
   font-size: var(--font-20);
   margin: 0 0 var(--space-16) 0;

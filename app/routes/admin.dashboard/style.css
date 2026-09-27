@@ -12,6 +12,12 @@
   text-align: center;
 }
 
+.admin-home-route__subtitle {
+  color: var(--fg-muted);
+  margin: 0;
+  text-align: center;
+}
+
 .admin-home-route__empty-state {
   text-align: center;
   color: var(--fg-muted);

@@ -461,9 +461,12 @@ export const FIXTURE_TRIP: TripResponse = {
       tripId: 'bariloche-2026-01',
     },
   ],
+  // Already happened — nothing left to plan for (Phase K,
+  // finance-frontend.md §15).
+  plannedItems: [],
 };
 
-// Any trip other than the one above demonstrates the empty state (a
+// Any trip other than the two below demonstrates the empty state (a
 // trip that exists — it's in FIXTURE_TRIPS — but has no synced expenses
 // yet), same "one rich example, everything else is empty" pattern as
 // the month/year fixtures.
@@ -477,4 +480,47 @@ export const FIXTURE_TRIP_EMPTY: TripResponse = {
   budget: null,
   categories: [],
   transactions: [],
+  plannedItems: [],
+};
+
+// The `planned` demo trip (Phase K, finance-frontend.md §15) — no real
+// expenses yet by definition, but real planned line items, including
+// one already `done` (booked/paid before the trip itself has started,
+// e.g. travel insurance) to demonstrate that state too.
+export const FIXTURE_TRIP_PLANNED: TripResponse = {
+  id: 'mendoza-2026-11',
+  name: 'Mendoza',
+  startDate: '2026-11-20',
+  endDate: '2026-11-27',
+  status: 'planned',
+  total: { ars: 0, usd: 0 },
+  budget: { ars: 600000, usd: 440 },
+  categories: [],
+  transactions: [],
+  plannedItems: [
+    {
+      id: 'plan_001',
+      description: 'Flights',
+      // usd: 0 — a manual estimate, not a real transaction, so there's
+      // no blue-rate lookup to convert against (finance-frontend.md
+      // §15). Only the ARS figure is ever shown.
+      estimatedAmount: { ars: 180000, usd: 0 },
+      categoryId: 'transport',
+      done: false,
+    },
+    {
+      id: 'plan_002',
+      description: 'Hotel — 7 nights',
+      estimatedAmount: { ars: 300000, usd: 0 },
+      categoryId: 'other',
+      done: false,
+    },
+    {
+      id: 'plan_003',
+      description: 'Travel insurance',
+      estimatedAmount: { ars: 25000, usd: 0 },
+      categoryId: null,
+      done: true,
+    },
+  ],
 };

@@ -115,6 +115,21 @@ const tripSummary = z.object({
 
 export const TripsResponseSchema = z.array(tripSummary);
 
+// Phase K (finance-frontend.md §15) — a manually-entered, forward-looking
+// estimate for a trip that hasn't happened yet. Deliberately separate
+// from `transaction`: never summed into a trip's `total` or the Phase J
+// budget comparison, and never auto-matched against a real transaction
+// once one arrives (manual `done`/delete instead) — see §15 for why.
+const plannedItem = z.object({
+  id: z.string().min(1),
+  description: z.string().min(1),
+  estimatedAmount: moneyAmount,
+  // Nullable, not required — a rough breakdown while planning, not a
+  // mandatory field the way it is on a real, Claude-categorized transaction.
+  categoryId: z.string().nullable(),
+  done: z.boolean(),
+});
+
 // Extends tripSummary rather than repeating its fields — otherwise a
 // later change to one could silently drift from the other. Adds what a
 // trip's detail view needs beyond the summary; deliberately missing
@@ -125,6 +140,7 @@ export const TripsResponseSchema = z.array(tripSummary);
 export const TripResponseSchema = tripSummary.extend({
   categories: z.array(categoryBreakdown),
   transactions: z.array(transaction),
+  plannedItems: z.array(plannedItem),
 });
 
 // Mid-month handling (finance-frontend §9): the current, still-incomplete
@@ -157,6 +173,7 @@ export type MonthlyAnalysisResponse = z.infer<typeof MonthlyAnalysisResponseSche
 export type TripSummary = z.infer<typeof tripSummary>;
 export type TripsResponse = z.infer<typeof TripsResponseSchema>;
 export type TripResponse = z.infer<typeof TripResponseSchema>;
+export type PlannedItem = z.infer<typeof plannedItem>;
 
 export function parseMonthResponse(raw: unknown, source = 'GET /api/months/:month'): MonthResponse {
   const result = MonthResponseSchema.safeParse(raw);
