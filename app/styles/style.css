@@ -336,6 +336,14 @@ main {
     min-height: 100dvh;
     padding-left: var(--space-200);
   }
+
+  /* /admin never renders this NavBar (app/root.tsx) — AdminNavBar
+   * reserves its own clearance independently via
+   * app/routes/admin/style.css, so this padding would just be 200px
+   * of dead space stacked on top of that. */
+  body.root--admin {
+    padding-left: 0;
+  }
 }
 
 /* Print: assume a recruiter Ctrl-P'd a route to share or save. Strip

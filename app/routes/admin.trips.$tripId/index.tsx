@@ -9,10 +9,12 @@ import PieChart from '~/components/PieChart';
 import { FIXTURE_TRIP, FIXTURE_TRIPS } from '~/data/admin-fixtures';
 import type { TripResponse } from '~/data/admin-schema';
 import type { Locale } from '~/intl';
+import { adminMeta } from '~/utils/admin-meta';
 import { getCategoryColor } from '~/utils/category-colors';
 import { getDateFnsLocale } from '~/utils/date-fns-locale';
 import { formatDateRange } from '~/utils/format-date-range';
 import { formatArs, formatUsd } from '~/utils/format-money';
+import { getCategoryLabel } from '~/utils/get-category-label';
 import { useCategoryIsolation } from '~/utils/use-category-isolation';
 import { getClassMaker } from '~/utils/utils';
 
@@ -48,9 +50,8 @@ export async function loader({ params }: LoaderFunctionArgs) {
   return { trip: getTripFixture(tripId) };
 }
 
-export const meta: MetaFunction<typeof loader> = ({ loaderData }) => [
-  { title: loaderData ? `${loaderData.trip.name} — Admin` : 'Admin' },
-];
+export const meta: MetaFunction<typeof loader> = ({ loaderData }) =>
+  adminMeta(loaderData ? `${loaderData.trip.name} — Admin` : 'Admin');
 
 export function ErrorBoundary() {
   const error = useRouteError();
@@ -111,7 +112,13 @@ export default function AdminTrip() {
           <p className={getClasses('active-category')}>
             <FormattedMessage
               id="ADMIN_SHOWING_CATEGORY_ONLY"
-              values={{ category: activeCategory.categoryName }}
+              values={{
+                category: getCategoryLabel(
+                  activeCategory.categoryId,
+                  activeCategory.categoryName,
+                  formatMessage
+                ),
+              }}
             />{' '}
             <button type="button" className={getClasses('clear-filter')} onClick={clearCategory}>
               <FormattedMessage id="ADMIN_SHOW_ALL" />
@@ -133,7 +140,7 @@ export default function AdminTrip() {
           <PieChart
             data={trip.categories.map((category) => ({
               id: category.categoryId,
-              label: category.categoryName,
+              label: getCategoryLabel(category.categoryId, category.categoryName, formatMessage),
               value: category.total.ars,
             }))}
             activeId={activeCategoryId}
@@ -160,7 +167,13 @@ export default function AdminTrip() {
                         style={{ backgroundColor: getCategoryColor(index) }}
                         aria-hidden="true"
                       />
-                      <span className={getClasses('category-name')}>{category.categoryName}</span>
+                      <span className={getClasses('category-name')}>
+                        {getCategoryLabel(
+                          category.categoryId,
+                          category.categoryName,
+                          formatMessage
+                        )}
+                      </span>
                       <span className={getClasses('category-total')}>
                         {formatArs(category.total.ars)}
                       </span>
@@ -176,7 +189,13 @@ export default function AdminTrip() {
               {activeCategory ? (
                 <FormattedMessage
                   id="ADMIN_TRANSACTIONS_HEADING_FILTERED"
-                  values={{ category: activeCategory.categoryName }}
+                  values={{
+                    category: getCategoryLabel(
+                      activeCategory.categoryId,
+                      activeCategory.categoryName,
+                      formatMessage
+                    ),
+                  }}
                 />
               ) : (
                 <FormattedMessage id="ADMIN_TRANSACTIONS_HEADING" />
@@ -191,7 +210,7 @@ export default function AdminTrip() {
                 {visibleTransactions.map((tx) => (
                   <Card key={tx.id} title={tx.description}>
                     <p className={getClasses('transaction-meta')}>
-                      {tx.categoryName} ·{' '}
+                      {getCategoryLabel(tx.categoryId, tx.categoryName, formatMessage)} ·{' '}
                       {format(parseISO(tx.occurredOn), 'MMM d', { locale: dfLocale })} · {tx.paidBy}
                     </p>
                     <p className={getClasses('transaction-amount')}>{formatArs(tx.amount.ars)}</p>

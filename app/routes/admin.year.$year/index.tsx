@@ -5,10 +5,13 @@ import { isRouteErrorResponse, Link, useLoaderData, useRouteError } from 'react-
 
 import BarChart from '~/components/BarChart';
 import PieChart from '~/components/PieChart';
+import SearchFilterBar from '~/components/SearchFilterBar';
 import type { Locale } from '~/intl';
+import { adminMeta } from '~/utils/admin-meta';
 import { getCategoryColor } from '~/utils/category-colors';
 import { formatArs, formatUsd } from '~/utils/format-money';
 import { formatMonthLabel } from '~/utils/format-month-label';
+import { getCategoryLabel } from '~/utils/get-category-label';
 import { getYearFixture } from '~/utils/get-year-fixture';
 import { useCategoryIsolation } from '~/utils/use-category-isolation';
 import { getClassMaker } from '~/utils/utils';
@@ -35,9 +38,8 @@ export async function loader({ params }: LoaderFunctionArgs) {
   };
 }
 
-export const meta: MetaFunction<typeof loader> = ({ loaderData }) => [
-  { title: loaderData ? `${loaderData.year.year} — Admin` : 'Admin' },
-];
+export const meta: MetaFunction<typeof loader> = ({ loaderData }) =>
+  adminMeta(loaderData ? `${loaderData.year.year} — Admin` : 'Admin');
 
 export function ErrorBoundary() {
   const error = useRouteError();
@@ -69,6 +71,26 @@ export default function AdminYear() {
     String(year.year)
   );
   const displayedTotal = activeCategory ? activeCategory.total : year.total;
+
+  const [categorySearch, setCategorySearch] = useState('');
+  // Colors stay tied to each category's original index — narrowing the
+  // list with a search shouldn't reshuffle which swatch means what.
+  const categoriesWithLabels = year.categories.map((category, index) => ({
+    ...category,
+    label: getCategoryLabel(category.categoryId, category.categoryName, formatMessage),
+    color: getCategoryColor(index),
+  }));
+  const normalizedSearch = categorySearch.trim().toLowerCase();
+  const filteredCategories = normalizedSearch
+    ? categoriesWithLabels.filter((category) =>
+        category.label.toLowerCase().includes(normalizedSearch)
+      )
+    : categoriesWithLabels;
+  const hasActiveFilter = categorySearch !== '' || activeCategoryId !== null;
+  function clearFilters() {
+    setCategorySearch('');
+    clearCategory();
+  }
 
   return (
     <div className={getClasses()}>
@@ -105,7 +127,13 @@ export default function AdminYear() {
           <p className={getClasses('active-category')}>
             <FormattedMessage
               id="ADMIN_SHOWING_CATEGORY_ONLY"
-              values={{ category: activeCategory.categoryName }}
+              values={{
+                category: getCategoryLabel(
+                  activeCategory.categoryId,
+                  activeCategory.categoryName,
+                  formatMessage
+                ),
+              }}
             />{' '}
             <button type="button" className={getClasses('clear-filter')} onClick={clearCategory}>
               <FormattedMessage id="ADMIN_SHOW_ALL" />
@@ -148,7 +176,7 @@ export default function AdminYear() {
           <PieChart
             data={year.categories.map((category) => ({
               id: category.categoryId,
-              label: category.categoryName,
+              label: getCategoryLabel(category.categoryId, category.categoryName, formatMessage),
               value: category.total.ars,
             }))}
             activeId={activeCategoryId}
@@ -159,31 +187,44 @@ export default function AdminYear() {
             <h2 id="categories-heading" className={getClasses('section-title')}>
               <FormattedMessage id="ADMIN_CATEGORIES_HEADING" />
             </h2>
-            <ul className={getClasses('category-list')}>
-              {year.categories.map((category, index) => {
-                const isActive = category.categoryId === activeCategoryId;
-                return (
-                  <li key={category.categoryId}>
-                    <button
-                      type="button"
-                      className={getClasses('category-row', { active: isActive })}
-                      onClick={() => toggleCategory(category.categoryId)}
-                      aria-pressed={isActive}
-                    >
-                      <span
-                        className={getClasses('category-swatch')}
-                        style={{ backgroundColor: getCategoryColor(index) }}
-                        aria-hidden="true"
-                      />
-                      <span className={getClasses('category-name')}>{category.categoryName}</span>
-                      <span className={getClasses('category-total')}>
-                        {formatArs(category.total.ars)}
-                      </span>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
+            <SearchFilterBar
+              value={categorySearch}
+              onChange={setCategorySearch}
+              onClear={clearFilters}
+              label={formatMessage({ id: 'ADMIN_SEARCH_CATEGORIES_LABEL' })}
+              hasActiveFilter={hasActiveFilter}
+            />
+            {filteredCategories.length === 0 ? (
+              <p className={getClasses('empty-state')} role="status">
+                <FormattedMessage id="ADMIN_NO_MATCHING_CATEGORIES" />
+              </p>
+            ) : (
+              <ul className={getClasses('category-list')}>
+                {filteredCategories.map((category) => {
+                  const isActive = category.categoryId === activeCategoryId;
+                  return (
+                    <li key={category.categoryId}>
+                      <button
+                        type="button"
+                        className={getClasses('category-row', { active: isActive })}
+                        onClick={() => toggleCategory(category.categoryId)}
+                        aria-pressed={isActive}
+                      >
+                        <span
+                          className={getClasses('category-swatch')}
+                          style={{ backgroundColor: category.color }}
+                          aria-hidden="true"
+                        />
+                        <span className={getClasses('category-name')}>{category.label}</span>
+                        <span className={getClasses('category-total')}>
+                          {formatArs(category.total.ars)}
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
           </section>
         </>
       )}

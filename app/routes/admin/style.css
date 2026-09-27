@@ -5,14 +5,20 @@
 }
 
 .admin-layout__content {
+  /* No global box-sizing: border-box reset exists in this repo (public
+   * routes that need it opt in per-element) — without this, `width:
+   * 100%` + `padding` add up to wider than the parent and overflow the
+   * viewport horizontally on mobile. */
+  box-sizing: border-box;
   padding: var(--space-16);
   max-width: 1024px;
   margin: 0 auto;
   width: 100%;
   /* Clears the fixed bottom tab bar (mobile) — not derived from a
    * shared token since AdminNavBar's own height isn't exposed as one;
-   * generous rather than exact, the tab bar is short. */
-  padding-bottom: calc(var(--space-80) + var(--space-16));
+   * measured at ~132px (utility row + nav links + bordered sign-out
+   * button) with a buffer on top, not exact-to-the-pixel. */
+  padding-bottom: calc(var(--space-80) + var(--space-72));
 }
 
 /* Compound selector, not `.admin-layout__content--no-nav` — getClassMaker's
@@ -28,5 +34,11 @@
      * $bp-md width exactly, same var(--space-200) NavBar's rail uses. */
     padding-left: calc(var(--space-200) + var(--space-16));
     padding-bottom: var(--space-16);
+  }
+
+  /* The login page renders no nav at all — reserving rail clearance for
+   * it here pushed the centered content off-axis to the right. */
+  .admin-layout__content.admin-layout--no-nav {
+    padding-left: var(--space-16);
   }
 }

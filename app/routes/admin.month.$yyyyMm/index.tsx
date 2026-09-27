@@ -9,10 +9,12 @@ import PieChart from '~/components/PieChart';
 import { FIXTURE_ANALYSIS_READY, FIXTURE_MONTH, FIXTURE_MONTH_EMPTY } from '~/data/admin-fixtures';
 import type { MonthlyAnalysisResponse, MonthResponse } from '~/data/admin-schema';
 import type { Locale } from '~/intl';
+import { adminMeta } from '~/utils/admin-meta';
 import { getCategoryColor } from '~/utils/category-colors';
 import { getDateFnsLocale } from '~/utils/date-fns-locale';
 import { formatArs, formatUsd } from '~/utils/format-money';
 import { formatMonthLabel } from '~/utils/format-month-label';
+import { getCategoryLabel } from '~/utils/get-category-label';
 import { useCategoryIsolation } from '~/utils/use-category-isolation';
 import { getClassMaker } from '~/utils/utils';
 
@@ -69,9 +71,8 @@ export async function loader({ params }: LoaderFunctionArgs) {
   };
 }
 
-export const meta: MetaFunction<typeof loader> = ({ loaderData }) => [
-  { title: loaderData ? `${formatMonthLabel(loaderData.month.month)} — Admin` : 'Admin' },
-];
+export const meta: MetaFunction<typeof loader> = ({ loaderData }) =>
+  adminMeta(loaderData ? `${formatMonthLabel(loaderData.month.month)} — Admin` : 'Admin');
 
 export function ErrorBoundary() {
   const error = useRouteError();
@@ -107,6 +108,9 @@ export default function AdminMonth() {
     ? month.transactions.filter((tx) => tx.categoryId === activeCategoryId)
     : month.transactions;
   const dfLocale = getDateFnsLocale(locale as Locale);
+  const activeCategoryLabel = activeCategory
+    ? getCategoryLabel(activeCategory.categoryId, activeCategory.categoryName, formatMessage)
+    : undefined;
 
   return (
     <div className={getClasses()}>
@@ -156,7 +160,7 @@ export default function AdminMonth() {
           <p className={getClasses('active-category')}>
             <FormattedMessage
               id="ADMIN_SHOWING_CATEGORY_ONLY"
-              values={{ category: activeCategory.categoryName }}
+              values={{ category: activeCategoryLabel }}
             />{' '}
             <button type="button" className={getClasses('clear-filter')} onClick={clearCategory}>
               <FormattedMessage id="ADMIN_SHOW_ALL" />
@@ -191,7 +195,7 @@ export default function AdminMonth() {
           <PieChart
             data={month.categories.map((category) => ({
               id: category.categoryId,
-              label: category.categoryName,
+              label: getCategoryLabel(category.categoryId, category.categoryName, formatMessage),
               value: category.total.ars,
             }))}
             activeId={activeCategoryId}
@@ -224,7 +228,13 @@ export default function AdminMonth() {
                         style={{ backgroundColor: getCategoryColor(index) }}
                         aria-hidden="true"
                       />
-                      <span className={getClasses('category-name')}>{category.categoryName}</span>
+                      <span className={getClasses('category-name')}>
+                        {getCategoryLabel(
+                          category.categoryId,
+                          category.categoryName,
+                          formatMessage
+                        )}
+                      </span>
                       <span className={getClasses('category-total')}>
                         {formatArs(category.total.ars)}
                       </span>
@@ -240,7 +250,7 @@ export default function AdminMonth() {
               {activeCategory ? (
                 <FormattedMessage
                   id="ADMIN_TRANSACTIONS_HEADING_FILTERED"
-                  values={{ category: activeCategory.categoryName }}
+                  values={{ category: activeCategoryLabel }}
                 />
               ) : (
                 <FormattedMessage id="ADMIN_TRANSACTIONS_HEADING" />
@@ -260,7 +270,7 @@ export default function AdminMonth() {
                 {visibleTransactions.map((tx) => (
                   <Card key={tx.id} title={tx.description}>
                     <p className={getClasses('transaction-meta')}>
-                      {tx.categoryName} ·{' '}
+                      {getCategoryLabel(tx.categoryId, tx.categoryName, formatMessage)} ·{' '}
                       {format(parseISO(tx.occurredOn), 'MMM d', { locale: dfLocale })} · {tx.paidBy}
                     </p>
                     <p className={getClasses('transaction-amount')}>{formatArs(tx.amount.ars)}</p>

@@ -4,6 +4,7 @@ import { Link, useLoaderData } from 'react-router';
 
 import Card from '~/components/Card';
 import type { Locale } from '~/intl';
+import { adminMeta } from '~/utils/admin-meta';
 import { formatArs } from '~/utils/format-money';
 import { formatMonthLabel } from '~/utils/format-month-label';
 import { getYearFixture } from '~/utils/get-year-fixture';
@@ -13,7 +14,7 @@ import styles from './style.css?url';
 
 export const links = () => [{ rel: 'stylesheet', href: styles }];
 
-export const meta: MetaFunction = () => [{ title: 'Home — Admin' }];
+export const meta: MetaFunction = () => adminMeta('Home — Admin');
 
 const BLOCK = 'admin-home-route';
 const getClasses = getClassMaker(BLOCK);

@@ -19,7 +19,7 @@ test.describe('Admin login (/admin)', () => {
 test.describe('Admin Home (/admin/dashboard)', () => {
   test('shows this year as a grid of month cards, newest first', async ({ page }) => {
     await page.goto('/admin/dashboard');
-    await expect(page.getByRole('heading', { name: /this year/i, level: 1 })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /current year/i, level: 1 })).toBeVisible();
     // Fixture-backed for the current year (docs/finance-frontend.md
     // §12/§13) — like the month view's own populated-vs-empty fixture
     // split, this degrades to the empty-state assertion below once the
@@ -206,6 +206,33 @@ test.describe('Admin year view (/admin/year/:year)', () => {
     await expect(page).toHaveURL('/admin/year/2025');
   });
 
+  test('searching categories narrows the list; clear filters resets search and isolation', async ({
+    page,
+  }) => {
+    await page.goto('/admin/year/2025');
+    await page.waitForLoadState('networkidle');
+    // `networkidle` doesn't guarantee hydration has attached React's
+    // input listeners yet — same settle this suite's visual spec uses,
+    // otherwise `.fill()` can race hydration and get silently
+    // overwritten by the not-yet-hydrated controlled input.
+    await page.waitForTimeout(200);
+    const clearFilters = page.getByRole('button', { name: /clear filters/i });
+    await expect(clearFilters).toBeDisabled();
+
+    await page.getByRole('searchbox', { name: /search categories/i }).fill('groc');
+    await expect(page.getByRole('button', { name: /Groceries/ })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Transport/ })).toHaveCount(0);
+    await expect(clearFilters).toBeEnabled();
+
+    await page.getByRole('button', { name: /Groceries/ }).click();
+    await expect(page.getByText('Showing Groceries only')).toBeVisible();
+
+    await clearFilters.click();
+    await expect(page.getByRole('searchbox', { name: /search categories/i })).toHaveValue('');
+    await expect(page.getByText(/Showing .* only/)).toHaveCount(0);
+    await expect(page.getByRole('button', { name: /Transport/ })).toBeVisible();
+  });
+
   test('renders the ErrorBoundary for a malformed year param', async ({ page }) => {
     await page.goto('/admin/year/not-a-year', { waitUntil: 'domcontentloaded' });
     await expect(page.getByText(/that year doesn't look right/i)).toBeVisible();
@@ -233,6 +260,32 @@ test.describe('Admin trips list (/admin/trips)', () => {
     await page.getByRole('link', { name: /Bariloche/ }).click();
     await expect(page).toHaveURL('/admin/trips/bariloche-2026-01');
     await expect(page.getByRole('heading', { name: 'Bariloche', level: 1 })).toBeVisible();
+  });
+
+  test('searching filters by trip name; clear filters resets it', async ({ page }) => {
+    await page.goto('/admin/trips');
+    await page.waitForLoadState('networkidle');
+    // See the equivalent wait in the Year search test — `.fill()` can
+    // otherwise race hydration and get silently discarded.
+    await page.waitForTimeout(200);
+    const clearFilters = page.getByRole('button', { name: /clear filters/i });
+    await expect(clearFilters).toBeDisabled();
+
+    await page.getByRole('searchbox', { name: /search trips/i }).fill('bariloche');
+    await expect(page.getByRole('link', { name: /Bariloche/ })).toBeVisible();
+    await expect(page.getByRole('link', { name: /Cataratas del Iguazú/ })).toHaveCount(0);
+
+    await clearFilters.click();
+    await expect(page.getByRole('searchbox', { name: /search trips/i })).toHaveValue('');
+    await expect(page.getByRole('link', { name: /Cataratas del Iguazú/ })).toBeVisible();
+  });
+
+  test('shows a no-match message when the search matches no trip', async ({ page }) => {
+    await page.goto('/admin/trips');
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(200);
+    await page.getByRole('searchbox', { name: /search trips/i }).fill('nonexistent trip');
+    await expect(page.getByText(/no trips match your search/i)).toBeVisible();
   });
 });
 

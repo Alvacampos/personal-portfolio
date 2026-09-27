@@ -58,6 +58,64 @@ Newest first. Each entry: what was decided or tried, and why — especially
 the "we tried X and backed out" entries, which are the ones worth having a
 record of.
 
+### 2026-09-27 — Real-browser review of PR #335 surfaced four root causes
+
+Screenshots + DevTools inspection against the running `admin/phase-h-home`
+branch (Chrome device-toolbar emulation, not just a resize) surfaced
+several visual bugs the CI suite hadn't caught — all four traced back to
+distinct root causes, not one bug wearing four costumes:
+
+- **`/admin`'s mobile layout was silently rendering as desktop.** Every
+  admin route's `meta()` returned a bare `[{ title }]`, and React Router
+  doesn't merge a route's meta with its ancestors' by default — that
+  silently dropped root's `<meta name="viewport">` tag too. Without it,
+  a real phone (and Chrome's device-toolbar emulation, which honors the
+  tag) falls back to a ~980px desktop layout viewport regardless of the
+  device's actual width, so every `$bp-md` media query read "desktop."
+  Fixed with a shared `adminMeta(title)` helper
+  (`app/utils/admin-meta.ts`) every admin route now calls instead of
+  returning a bare title array.
+- **The public site's `body { padding-left: 200px }` (reserved for the
+  public NavBar's desktop rail) applied unconditionally, including on
+  `/admin`, which never renders that NavBar.** `AdminNavBar` is
+  `position: fixed` and reserves its own clearance independently via
+  `admin/style.css`, so this was 200px of pure dead space stacked on top
+  of that on _every_ admin page, not just the login page (where it was
+  most visible as an off-center panel). Fixed by giving `<body>` a
+  `root--admin` modifier (computed once in `is-admin-path.ts`, shared
+  between `root.tsx`'s `Layout` and `App`) and scoping the padding-left
+  rule to skip it.
+- **No global `box-sizing: border-box` reset exists in this repo**
+  (routes that need it opt in per-element, e.g. `skills._index`,
+  `contact._index`) — `admin-layout__content` never got it, so `width:
+100%` + `padding` added up to wider than its parent and caused a real
+  horizontal overflow on mobile (content clipped at the right edge).
+  Fixed by adding `box-sizing: border-box` to that one element.
+- **The sign-out button's restyle (bordered pill, more padding) made the
+  mobile fixed nav taller** without a matching bump to the content
+  wrapper's bottom clearance — Playwright's mobile suite caught this for
+  real (a category button was unclickable, covered by the fixed nav).
+  Padding bumped to match the nav's measured height with a buffer.
+
+Also fixed in the same pass, not root-cause bugs but real gaps: category
+names (`Groceries`, `Rent / Expensas`, etc.) were never translated —
+added a categoryId→label map (`get-category-label.ts`) since the six
+categories are a fixed, developer-controlled taxonomy (unlike a
+transaction's free-text description), not a wire-schema concern; Home's
+heading changed from "This year" to "Current Year"; the sign-out link
+got real button styling; a `SearchFilterBar` component was added to the
+Year (searches categories) and Trips (searches by name) views, each with
+a "Clear filters" button that resets both the search text and any
+isolated category/trip.
+
+One test-writing lesson worth keeping: two new Playwright tests
+(category search, trip search) failed on the very first run every time
+and passed instantly on retry — not the known Vite-cold-compile
+flakiness this suite already has elsewhere, but `.fill()` racing
+hydration on a freshly-loaded page. Fixed with the same `networkidle` +
+short settle this suite's visual spec already uses for the same class of
+problem, not a blind retry-and-hope.
+
 ### 2026-09-27 — Phase G merged (PR #334); Phase H (Home) built and shipped
 
 Phase G's own build surfaced two loose ends beyond the nav/i18n retrofit

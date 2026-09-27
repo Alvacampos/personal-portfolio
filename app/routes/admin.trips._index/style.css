@@ -1,4 +1,5 @@
 @import '../../components/Card/style.css';
+@import '../../components/SearchFilterBar/style.css';
 
 .admin-trips-route {
   display: flex;

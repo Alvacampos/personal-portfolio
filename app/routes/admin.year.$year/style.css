@@ -1,5 +1,6 @@
 @import '../../components/BarChart/style.css';
 @import '../../components/PieChart/style.css';
+@import '../../components/SearchFilterBar/style.css';
 
 .admin-year-route {
   display: flex;

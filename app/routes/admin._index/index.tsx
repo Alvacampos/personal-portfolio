@@ -2,18 +2,21 @@ import { FormattedMessage } from 'react-intl';
 import type { MetaFunction } from 'react-router';
 import { Link, useLocation } from 'react-router';
 
+import { adminMeta } from '~/utils/admin-meta';
 import { getClassMaker } from '~/utils/utils';
 
 import styles from './style.css?url';
 
 export const links = () => [{ rel: 'stylesheet', href: styles }];
 
-// Plain title only — no OG/Twitter tags (mergeRouteMeta is a public-site
-// concern) and no indexing metadata needed beyond the X-Robots-Tag header
-// + robots.txt disallow already stamped in workers/app.ts. Not localized
+// adminMeta re-declares the viewport tag every child route's meta()
+// would otherwise silently drop (app/utils/admin-meta.ts) — no OG/
+// Twitter tags (mergeRouteMeta is a public-site concern) and no
+// indexing metadata needed beyond the X-Robots-Tag header + robots.txt
+// disallow already stamped in workers/app.ts. Title not localized
 // either, same as the public site's own root <title> (app/root.tsx) —
 // there's no existing precedent for translating <title> in this repo.
-export const meta: MetaFunction = () => [{ title: 'Sign in — Admin' }];
+export const meta: MetaFunction = () => adminMeta('Sign in — Admin');
 
 const BLOCK = 'admin-login-route';
 const getClasses = getClassMaker(BLOCK);
