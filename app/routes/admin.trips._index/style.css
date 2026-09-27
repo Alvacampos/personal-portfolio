@@ -1,0 +1,34 @@
+@import '../../components/Card/style.css';
+
+.admin-trips-route {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-20);
+}
+
+.admin-trips-route__title {
+  font-size: var(--font-24);
+  margin: 0;
+  text-align: center;
+}
+
+.admin-trips-route__empty-state {
+  text-align: center;
+  color: var(--fg-muted);
+  padding: var(--space-32) 0;
+}
+
+.admin-trips-route__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+}
+
+.admin-trips-route__card-link {
+  text-decoration: none;
+  color: inherit;
+  /* 44px touch-target floor (docs/finance-frontend.md §3) — Card's own
+   * padding already clears this comfortably, this is just a floor. */
+  display: block;
+  min-height: 44px;
+}

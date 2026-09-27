@@ -90,6 +90,38 @@ export const YearResponseSchema = z.object({
 
 export const CategoriesResponseSchema = z.array(category);
 
+// Promoted here from "future, not v1" (backend kickoff §3.7/§6) now that
+// Phase F actually builds against it — same status/budget columns the
+// backend schema already carries from day one, even though the planning
+// UI itself (status: 'planned') stays a deliberate wait-and-see, not
+// built in this phase (finance-frontend.md §6).
+const tripStatus = z.enum(['planned', 'active', 'completed']);
+
+const tripSummary = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  startDate: isoDate,
+  // Nullable, not just "always set": an `active` trip may not have an
+  // end date yet, and a `planned` one might not either.
+  endDate: isoDate.nullable(),
+  status: tripStatus,
+  total: moneyAmount,
+});
+
+export const TripsResponseSchema = z.array(tripSummary);
+
+// Extends tripSummary rather than repeating its fields — otherwise a
+// later change to one could silently drift from the other. Adds what a
+// trip's detail view needs beyond the summary; deliberately missing
+// what a month/year response has that doesn't apply to a trip: no
+// previousMonthTotal/deltaPercent (a trip has no "previous trip" to
+// compare against), no monthly-analysis equivalent (§6: Claude analysis
+// stays a monthly-only feature for v1).
+export const TripResponseSchema = tripSummary.extend({
+  categories: z.array(categoryBreakdown),
+  transactions: z.array(transaction),
+});
+
 // Mid-month handling (finance-frontend §9): the current, still-incomplete
 // month never gets an analysis — `not_available` is the only valid state
 // for it, not an empty string or a null `analysis` field. Modeled as a
@@ -117,6 +149,9 @@ export type MonthResponse = z.infer<typeof MonthResponseSchema>;
 export type YearResponse = z.infer<typeof YearResponseSchema>;
 export type CategoriesResponse = z.infer<typeof CategoriesResponseSchema>;
 export type MonthlyAnalysisResponse = z.infer<typeof MonthlyAnalysisResponseSchema>;
+export type TripSummary = z.infer<typeof tripSummary>;
+export type TripsResponse = z.infer<typeof TripsResponseSchema>;
+export type TripResponse = z.infer<typeof TripResponseSchema>;
 
 export function parseMonthResponse(raw: unknown, source = 'GET /api/months/:month'): MonthResponse {
   const result = MonthResponseSchema.safeParse(raw);
@@ -144,6 +179,18 @@ export function parseMonthlyAnalysisResponse(
   source = 'GET /api/months/:month/analysis'
 ): MonthlyAnalysisResponse {
   const result = MonthlyAnalysisResponseSchema.safeParse(raw);
+  if (!result.success) throw new Error(formatZodError(source, result.error));
+  return result.data;
+}
+
+export function parseTripsResponse(raw: unknown, source = 'GET /api/trips'): TripsResponse {
+  const result = TripsResponseSchema.safeParse(raw);
+  if (!result.success) throw new Error(formatZodError(source, result.error));
+  return result.data;
+}
+
+export function parseTripResponse(raw: unknown, source = 'GET /api/trips/:id'): TripResponse {
+  const result = TripResponseSchema.safeParse(raw);
   if (!result.success) throw new Error(formatZodError(source, result.error));
   return result.data;
 }

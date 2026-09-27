@@ -2,6 +2,8 @@ import type {
   CategoriesResponse,
   MonthlyAnalysisResponse,
   MonthResponse,
+  TripResponse,
+  TripsResponse,
   YearResponse,
 } from './admin-schema';
 
@@ -323,4 +325,140 @@ export const FIXTURE_ANALYSIS_NOT_AVAILABLE: MonthlyAnalysisResponse = {
   status: 'not_available',
   month: '2026-09',
   reason: 'month_in_progress',
+};
+
+// Both trips are `completed` — v1 has no planning UI (finance-frontend.md
+// §6's wait-and-see decision), so a `planned` trip is a schema
+// possibility the backend supports, not something this fixture set
+// needs to demonstrate yet.
+export const FIXTURE_TRIPS: TripsResponse = [
+  {
+    id: 'bariloche-2026-01',
+    name: 'Bariloche',
+    startDate: '2026-01-10',
+    endDate: '2026-01-17',
+    status: 'completed',
+    total: { ars: 450000, usd: 329 },
+  },
+  {
+    id: 'iguazu-2025-11',
+    name: 'Cataratas del Iguazú',
+    startDate: '2025-11-05',
+    endDate: '2025-11-09',
+    status: 'completed',
+    total: { ars: 280000, usd: 204 },
+  },
+];
+
+// The "populated" demo trip — matching FIXTURE_TRIPS[0]'s summary.
+export const FIXTURE_TRIP: TripResponse = {
+  id: 'bariloche-2026-01',
+  name: 'Bariloche',
+  startDate: '2026-01-10',
+  endDate: '2026-01-17',
+  status: 'completed',
+  total: { ars: 450000, usd: 329 },
+  categories: [
+    {
+      categoryId: 'other',
+      categoryName: 'Other',
+      total: { ars: 180000, usd: 131 },
+      transactionCount: 1,
+    },
+    {
+      categoryId: 'transport',
+      categoryName: 'Transport',
+      total: { ars: 150000, usd: 110 },
+      transactionCount: 2,
+    },
+    {
+      categoryId: 'dining_out',
+      categoryName: 'Dining Out',
+      total: { ars: 120000, usd: 88 },
+      transactionCount: 3,
+    },
+  ],
+  transactions: [
+    {
+      id: 'tx_101',
+      occurredOn: '2026-01-10',
+      categoryId: 'other',
+      categoryName: 'Other',
+      description: 'Hotel — 7 nights',
+      amount: { ars: 180000, usd: 131 },
+      currency: 'ARS',
+      paidBy: 'You',
+      tripId: 'bariloche-2026-01',
+    },
+    {
+      id: 'tx_102',
+      occurredOn: '2026-01-10',
+      categoryId: 'transport',
+      categoryName: 'Transport',
+      description: 'Flights',
+      amount: { ars: 100000, usd: 73 },
+      currency: 'ARS',
+      paidBy: 'You',
+      tripId: 'bariloche-2026-01',
+    },
+    {
+      id: 'tx_103',
+      occurredOn: '2026-01-12',
+      categoryId: 'transport',
+      categoryName: 'Transport',
+      description: 'Local bus + rental',
+      amount: { ars: 50000, usd: 37 },
+      currency: 'ARS',
+      paidBy: 'Partner',
+      tripId: 'bariloche-2026-01',
+    },
+    {
+      id: 'tx_104',
+      occurredOn: '2026-01-11',
+      categoryId: 'dining_out',
+      categoryName: 'Dining Out',
+      description: 'Dinner — Circuito Chico',
+      amount: { ars: 40000, usd: 29 },
+      currency: 'ARS',
+      paidBy: 'You',
+      tripId: 'bariloche-2026-01',
+    },
+    {
+      id: 'tx_105',
+      occurredOn: '2026-01-13',
+      categoryId: 'dining_out',
+      categoryName: 'Dining Out',
+      description: 'Lunch — Cerro Catedral',
+      amount: { ars: 40000, usd: 29 },
+      currency: 'ARS',
+      paidBy: 'Partner',
+      tripId: 'bariloche-2026-01',
+    },
+    {
+      id: 'tx_106',
+      occurredOn: '2026-01-15',
+      categoryId: 'dining_out',
+      categoryName: 'Dining Out',
+      description: 'Dinner — last night',
+      amount: { ars: 40000, usd: 30 },
+      currency: 'ARS',
+      paidBy: 'You',
+      tripId: 'bariloche-2026-01',
+    },
+  ],
+};
+
+// Any trip other than the one above demonstrates the empty state (a
+// trip that exists — it's in FIXTURE_TRIPS — but has no synced expenses
+// yet), same "one rich example, everything else is empty" pattern as
+// the month/year fixtures.
+export const FIXTURE_TRIP_EMPTY: TripResponse = {
+  id: 'iguazu-2025-11',
+  name: 'Cataratas del Iguazú',
+  startDate: '2025-11-05',
+  endDate: '2025-11-09',
+  status: 'completed',
+  total: { ars: 0, usd: 0 },
+  categories: [],
+  transactions: [],
 };
