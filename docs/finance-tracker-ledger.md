@@ -50,7 +50,7 @@
 | Phase G — Portfolio-parity chrome       | open   | `AdminNavBar` (side rail desktop / bottom tabs mobile) + react-intl retrofit of Phases A–F. Blocks H/I/J.                                                                                                 |
 | Phase H — Home                          | open   | Repurposes `/admin/dashboard` into a real landing page (frontend §13).                                                                                                                                    |
 | Phase I — Calendar                      | open   | New section (frontend §14) — no new backend surface needed.                                                                                                                                               |
-| Phase J — Vacation planning UI          | open   | Scope depends entirely on the reopened write-vs-read-only question (frontend §6/§11).                                                                                                                     |
+| Phase J — Vacation planning UI          | open   | Decided: read-only planned-vs-actual (frontend §6) — `budget` shown alongside actual total, no write endpoints/forms.                                                                                     |
 
 ## Decision log
 
@@ -87,12 +87,14 @@ actual screen to look at yet when those were written.
   fully derivable from data `GET /api/months/{yyyy-mm}` already returns
   via each transaction's `occurredOn`). Full designs in
   finance-frontend.md §13/§14.
-- **Reopened, not decided**: "plan/add vacation expenses" could mean a
-  read-only planned-vs-actual view (the trip's existing `budget` column
-  displayed, real entries still Telegram-only) or a real write UI on the
-  frontend — a genuine, much bigger exception to the write-boundary
+- **Reopened, then resolved same-day**: "plan/add vacation expenses"
+  could have meant a read-only planned-vs-actual view or a real write UI
+  on the frontend — asked directly rather than assumed, since the latter
+  would have been a genuine, much bigger exception to the write-boundary
   principle than the already-approved "Regenerate analysis" button.
-  Asked directly rather than assumed; answer pending.
+  **Decided: read-only.** The trip's existing `budget` column gets shown
+  alongside its actual total; real entries still only ever arrive via
+  Telegram. No new write endpoints, no forms.
 - New phases recorded: G (the two reversals — blocks everything else,
   since H/I/J all render inside whatever nav Phase G builds), H (Home),
   I (Calendar), J (vacation planning, shape TBD by the reopened question).

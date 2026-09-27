@@ -184,22 +184,18 @@ possibly planning ahead — not just after-the-fact tracking.
   list pattern as the month view (deliberately consistent, not a new
   layout to learn), scoped to that trip's tagged expenses instead of a
   calendar month.
-- **Reopened after Phase F shipped: "plan/add vacation expenses" was
-  asked for directly**, which is either (a) a read-only planned-vs-actual
-  view — the trip's own `budget` column, already in the schema, shown
-  alongside the actual total, with the real expense entries still only
-  ever arriving via Telegram — or (b) a real write UI on the frontend
-  that creates a planned trip and its budgeted line items directly. These
-  are not the same amount of work, and (b) is a genuine exception to the
-  write-boundary principle that's held since the very first backend doc
-  (finance-tracker.md §6.6: "the real write-boundary is who's in the
-  Telegram group") — bigger than the already-approved "Regenerate
-  analysis" exception, which only recomputes a derived summary and can't
-  create or alter a financial record the way a real write UI here would.
-  Asked directly rather than assumed either way — see the ledger for the
-  answer once it lands, and Phase J (§12) for the resulting scope. The
-  schema (`status`/`budget` on `trips`) stays built regardless; only the
-  UI's shape depends on the answer.
+- **Decided: read-only planned-vs-actual, not a write UI (Phase J).**
+  "Plan/add vacation expenses" is answered by showing the trip's own
+  `budget` column (already in the schema) alongside its actual total —
+  the real expense entries still only ever arrive via Telegram, same as
+  every other number in this app. This keeps the write-boundary principle
+  intact (finance-tracker.md §6.6: "the real write-boundary is who's in
+  the Telegram group") rather than opening a second, much bigger
+  exception than the already-approved "Regenerate analysis" button (which
+  only recomputes a derived summary and can't create or alter a financial
+  record the way a real write UI here would have). A `planned` trip with
+  no actual spend yet shows its budget with a "$0 spent so far" actual —
+  same empty-state discipline as everywhere else, not a special case.
 - No Claude analysis on the trip view for v1 (that's specifically a
   _monthly_ feature per the brief) — worth reconsidering once monthly
   analysis is proven out, not before.
@@ -331,19 +327,16 @@ bar, not a lower private-app-nobody-else-sees one:
 
 ## 11. Open questions
 
-The original four forks raised by this review are resolved — see
+All forks raised across both review passes are resolved — see
 [finance-tracker-ledger.md](finance-tracker-ledger.md) for the dated log
-entry, and the sections below for the reasoning behind each: charts use
+entries, and the sections below for the reasoning behind each: charts use
 Recharts (§1, §7), the monthly analysis gets a frontend "Regenerate"
 button (§9), the yearly last-year comparison is a fast-follow not v1 (§5),
-and trip planning is schema-now / UI-wait-and-see (§6).
-
-**One reopened after Phases A–F shipped** (§6): does "plan/add vacation
-expenses" mean a read-only planned-vs-actual view (the trip's existing
-`budget` column shown alongside the actual total, real entries still
-Telegram-only), or a real write UI that creates planned trips/line items
-directly on the frontend — a genuine exception to the write-boundary
-principle, not a minor one. Asked directly; not decided here.
+trip planning is schema-now / UI-wait-and-see (§6), and — reopened after
+Phases A–F shipped, then resolved — vacation planning is a read-only
+planned-vs-actual view, not a write UI (§6, Phase J in §12). No open forks
+remain in this doc; new ones that come up during implementation get added
+here rather than decided silently.
 
 ---
 
@@ -393,10 +386,10 @@ public site (§1's reversals):
   current month" into an actual page (§13).
 - **Phase I — Calendar.** New section (§14), built entirely from data the
   month endpoint already returns — no new backend surface needed.
-- **Phase J — Vacation planning UI.** Only if §11's now-reopened question
-  about write-capability resolves toward building it; a read-only
-  planned-vs-actual view and a real write UI are different enough in
-  scope that this phase's shape depends entirely on that answer.
+- **Phase J — Vacation planning UI.** Read-only planned-vs-actual (§6) —
+  the trip detail view shows `budget` alongside the actual total when a
+  trip has one set. No write endpoints, no forms; the frontend stays
+  read-only apart from the existing regenerate-analysis exception.
 
 ---
 
