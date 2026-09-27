@@ -184,18 +184,25 @@ possibly planning ahead — not just after-the-fact tracking.
   list pattern as the month view (deliberately consistent, not a new
   layout to learn), scoped to that trip's tagged expenses instead of a
   calendar month.
-- **Decided: read-only planned-vs-actual, not a write UI (Phase J).**
+- **Shipped: read-only planned-vs-actual, not a write UI (Phase J).**
   "Plan/add vacation expenses" is answered by showing the trip's own
-  `budget` column (already in the schema) alongside its actual total —
-  the real expense entries still only ever arrive via Telegram, same as
-  every other number in this app. This keeps the write-boundary principle
-  intact (finance-tracker.md §6.6: "the real write-boundary is who's in
-  the Telegram group") rather than opening a second, much bigger
-  exception than the already-approved "Regenerate analysis" button (which
-  only recomputes a derived summary and can't create or alter a financial
-  record the way a real write UI here would have). A `planned` trip with
-  no actual spend yet shows its budget with a "$0 spent so far" actual —
-  same empty-state discipline as everywhere else, not a special case.
+  `budget` (nullable — not every trip has one set, a distinct state from
+  a zero budget) alongside its actual total, a plain CSS progress bar,
+  and an over/under delta — the real expense entries still only ever
+  arrive via Telegram, same as every other number in this app. This
+  keeps the write-boundary principle intact (finance-tracker.md §6.6:
+  "the real write-boundary is who's in the Telegram group") rather than
+  opening a second, much bigger exception than the already-approved
+  "Regenerate analysis" button (which only recomputes a derived summary
+  and can't create or alter a financial record the way a real write UI
+  here would have). A `planned` trip with no actual spend yet shows its
+  budget with a "$0 spent so far" actual — same empty-state discipline
+  as everywhere else, not a special case. The comparison always uses the
+  trip's own total, never a category-isolated one, so isolating a
+  category on the detail view doesn't make the budget appear to change.
+  No invented warning/danger color for the over-budget state — same
+  reasoning as the month view's over-last-month delta (§4): a neutral
+  filled bar + bold text instead.
 - No Claude analysis on the trip view for v1 (that's specifically a
   _monthly_ feature per the brief) — worth reconsidering once monthly
   analysis is proven out, not before.
@@ -332,10 +339,10 @@ All forks raised across both review passes are resolved — see
 entries, and the sections below for the reasoning behind each: charts use
 Recharts (§1, §7), the monthly analysis gets a frontend "Regenerate"
 button (§9), the yearly last-year comparison is a fast-follow not v1 (§5),
-trip planning is schema-now / UI-wait-and-see (§6), and — reopened after
-Phases A–F shipped, then resolved — vacation planning is a read-only
-planned-vs-actual view, not a write UI (§6, Phase J in §12). No open forks
-remain in this doc; new ones that come up during implementation get added
+and — reopened after Phases A–F shipped, then resolved and later shipped
+as Phase J — vacation planning is a read-only planned-vs-actual view, not
+a write UI (§6, §12). No open forks remain in this doc; new ones that come
+up during implementation get added
 here rather than decided silently.
 
 ---

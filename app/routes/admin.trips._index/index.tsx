@@ -93,6 +93,14 @@ export default function AdminTrips() {
                       )}
                     </p>
                     <p className={getClasses('total')}>{formatArs(trip.total.ars)}</p>
+                    {trip.budget && (
+                      <p className={getClasses('budget')}>
+                        <FormattedMessage
+                          id="ADMIN_TRIP_BUDGET"
+                          values={{ amount: formatArs(trip.budget.ars) }}
+                        />
+                      </p>
+                    )}
                   </Card>
                 </Link>
               ))}

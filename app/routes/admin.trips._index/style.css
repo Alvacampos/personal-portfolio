@@ -81,3 +81,9 @@
   font-weight: var(--weight-700);
   margin: 0;
 }
+
+.admin-trips-route__budget {
+  font-size: var(--font-12);
+  color: var(--fg-muted);
+  margin: var(--space-4) 0 0;
+}
