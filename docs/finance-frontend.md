@@ -428,35 +428,55 @@ browsable whole.
 
 ## 14. Calendar (`/admin/calendar/:yyyyMm`)
 
-New section. Fully derivable from data the month endpoint already
-returns — every `Transaction` already carries `occurredOn` as an exact
-`YYYY-MM-DD` (`docs/finance-tracker-backend-kickoff.md` §6.1) — so this
-is a new _view_ of existing data, not a new API surface.
+Fully derivable from data the month endpoint already returns — every
+`Transaction` already carries `occurredOn` as an exact `YYYY-MM-DD`
+(`docs/finance-tracker-backend-kickoff.md` §6.1) — so this is a new
+_view_ of existing data, not a new API surface.
+
+Shipped once as a hand-rolled `<table>` (the original version of this
+section), then rebuilt the same day on `react-day-picker` after a user
+override asked for real calendar navigation and an amount-scaled color
+mark — see `docs/finance-tracker-ledger.md`'s "Phase I rebuilt on
+react-day-picker" entry for the full reasoning. Current shape:
 
 - **One month at a time**, same URL-is-the-source-of-truth prev/next
-  pattern as the month view (`/admin/calendar/2026-08`, `‹`/`›` arrows) —
-  consistent with the rest of the app rather than a new navigation idiom.
-- **A calendar grid**, one cell per day of the month. A day with at least
-  one transaction gets a visible marker (a dot, or the day's ARS total in
-  small text if it fits) — days with nothing stay visually quiet, same
-  "blank slate, not a broken-looking chart" principle already applied to
-  the month view's empty state (§4).
-- **Tapping a day** shows that day's transactions — inline, expanding
+  pattern as the month view (`/admin/calendar/2026-08`) — consistent
+  with the rest of the app rather than a new navigation idiom. Navigation
+  itself (prev/next buttons, keyboard arrow keys within the grid) is
+  `react-day-picker`'s, wired to `navigate()` via a controlled
+  `month`/`onMonthChange`. A native `<input type="date">` "jump to date"
+  control in the header covers picking an arbitrary date directly
+  (including one outside the currently displayed month) without needing
+  a separate search feature.
+- **A calendar grid**, one cell per day of the month, every day
+  selectable (not just days with data — an empty day selects too and
+  shows an explicit "nothing logged this day" message, rather than being
+  non-interactive). Days with at least one transaction are colored by
+  that day's ARS total relative to the month's single highest-spending
+  day (low/mid/high tiers via `getCalendarDayTiers`) — a color mark
+  similar to an airline booking calendar, not a binary dot. Days with
+  nothing stay visually quiet, same "blank slate, not a broken-looking
+  chart" principle applied to the month view's empty state (§4).
+- **Selecting a day** shows that day's transactions — inline, expanding
   below the grid (not a route change to a per-day URL). A calendar is
-  inherently a browsing tool where you might tap several different days
-  in a row; a full navigation per tap would be slower and would litter
-  browser history with single-day views nobody will ever deep-link to.
-  Tapping the same day again collapses it — same toggle idiom already
-  used for category isolation (§4/§8), not a new interaction to learn.
+  inherently a browsing tool where you might select several different
+  days in a row; a full navigation per tap would be slower and would
+  litter browser history with single-day views nobody will ever
+  deep-link to. Selecting the same day again deselects/collapses it —
+  same toggle idiom already used for category isolation (§4/§8), and
+  free behavior from `react-day-picker`'s `mode="single"` (`required`
+  left unset).
 - **Accessibility, the same discipline as the pie/bar charts (§10)**: a
-  calendar grid is itself a visual layout, not just a decorative chart, so
-  it can't simply be `aria-hidden` with a hidden list bolted on the side
-  the way the bar chart's month-by-month data is — the grid _is_ the
-  content here. Build it as a real `<table>` with a `<caption>` (the
-  month/year) and `<th scope="col">` weekday headers, so a screen reader
-  gets a normal, navigable data table instead of a div soup; the expanded
-  day's transaction list is a real, focusable region (not aria-hidden)
-  right below the grid.
+  calendar grid is itself a visual layout, not just a decorative chart,
+  so it can't simply be `aria-hidden` with a hidden list bolted on the
+  side the way the bar chart's month-by-month data is — the grid _is_
+  the content here. `react-day-picker` renders a real `<table role="grid"
+aria-label="…">` with `<th scope="col">` weekday headers (visually
+  abbreviated, `aria-hidden` as a row since each day button's own
+  accessible name already spells out its full weekday, e.g. "Saturday,
+  August 1st, 2026") — a screen reader gets a normal, navigable data
+  table, not div soup. The expanded day's transaction list is a real,
+  focusable region (not aria-hidden) right below the grid.
 - No isolate-a-category interaction here — a calendar's organizing axis is
   the day, not the category; category breakdown stays the month/year/trip
   views' job.

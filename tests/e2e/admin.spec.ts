@@ -269,53 +269,73 @@ test.describe('Admin calendar index (/admin/calendar)', () => {
 });
 
 test.describe('Admin calendar view (/admin/calendar/:yyyyMm)', () => {
-  test('shows a full month grid with a marker on each day that has transactions', async ({
-    page,
-  }) => {
+  test('shows a full, navigable month grid with every day selectable', async ({ page }) => {
     await page.goto('/admin/calendar/2026-08');
     await page.waitForLoadState('networkidle');
-    await expect(page.getByRole('heading', { name: 'August 2026', level: 1 })).toBeVisible();
-    // Real <table> semantics — a screen reader gets weekday column
-    // headers and a caption, not div soup (docs/finance-frontend.md §14).
-    await expect(page.getByRole('columnheader', { name: 'Mon' })).toBeVisible();
-    await expect(page.locator('.admin-calendar-route__grid caption')).toHaveText('August 2026');
-    // FIXTURE_MONTH (admin-fixtures.ts) has 10 transactions on 10 distinct days.
-    await expect(page.locator('.admin-calendar-route__day-button')).toHaveCount(10);
+    await expect(page.getByRole('heading', { name: 'Calendar', level: 1 })).toBeVisible();
+    // react-day-picker renders a real <table>. The weekday header row is
+    // `aria-hidden` (each day button's own accessible name already
+    // spells out its weekday, e.g. "Saturday, August 1st, 2026") but
+    // still visible sighted users; the caption is a live region.
+    await expect(page.locator('.admin-calendar-route__weekday').first()).toHaveText('Mo');
+    // role=status only takes its accessible name from an explicit
+    // aria-label/aria-labelledby, not its text content, so assert the
+    // role and the visible text separately rather than via `name`.
+    await expect(page.getByRole('status')).toHaveText('August 2026');
+    // August 2026 has 31 days, every one of them a real button now that
+    // date selection is handled by react-day-picker (mode="single").
+    await expect(page.locator('.admin-calendar-route__day-button')).toHaveCount(31);
   });
 
-  test('tapping a marked day expands its transactions; tapping again collapses', async ({
-    page,
-  }) => {
+  test('colors days by relative spend, airline-calendar style', async ({ page }) => {
     await page.goto('/admin/calendar/2026-08');
     await page.waitForLoadState('networkidle');
-    const aug1 = page.getByRole('button', { name: 'Aug 1, 2026' });
-    await expect(aug1).toHaveAttribute('aria-expanded', 'false');
+    // FIXTURE_MONTH (admin-fixtures.ts): Aug 5 (250000 ARS) is the
+    // month's single highest-spending day -> tier-high.
+    await expect(page.locator('.admin-calendar-route__day--tier-high')).toHaveCount(1);
+    await expect(
+      page.locator('.admin-calendar-route__day--tier-high .admin-calendar-route__day-button')
+    ).toHaveText('5');
+    await expect(page.locator('.admin-calendar-route__day--tier-mid')).toHaveCount(3);
+    await expect(page.locator('.admin-calendar-route__day--tier-low')).toHaveCount(6);
+  });
+
+  test('selecting a day shows its transactions; selecting again collapses', async ({ page }) => {
+    await page.goto('/admin/calendar/2026-08');
+    await page.waitForLoadState('networkidle');
+    const aug1 = page.getByRole('button', { name: /Saturday, August 1st, 2026/ });
 
     await aug1.click();
-    await expect(aug1).toHaveAttribute('aria-expanded', 'true');
     await expect(page.getByRole('heading', { name: /Transactions — Aug 1, 2026/i })).toBeVisible();
     await expect(page.getByText('SUBE top-up')).toBeVisible();
     await expect(page.getByText('Transport · Partner')).toBeVisible();
 
     await aug1.click();
-    await expect(aug1).toHaveAttribute('aria-expanded', 'false');
     await expect(page.getByText('SUBE top-up')).toHaveCount(0);
   });
 
-  test('a day with no transactions is not interactive', async ({ page }) => {
+  test('selecting an empty day shows the empty state', async ({ page }) => {
     await page.goto('/admin/calendar/2026-08');
     await page.waitForLoadState('networkidle');
     // August 3rd has no transactions in the fixture.
-    await expect(page.getByRole('button', { name: /Aug 3, 2026/i })).toHaveCount(0);
-    await expect(page.getByText('3', { exact: true })).toBeVisible();
+    await page.getByRole('button', { name: /Monday, August 3rd, 2026/ }).click();
+    await expect(page.getByText(/nothing logged this day/i)).toBeVisible();
   });
 
   test('prev/next navigate between months', async ({ page }) => {
     await page.goto('/admin/calendar/2026-08');
-    await page.getByRole('link', { name: /next month/i }).click();
+    await page.getByRole('button', { name: /next month/i }).click();
     await expect(page).toHaveURL('/admin/calendar/2026-09');
-    await page.getByRole('link', { name: /previous month/i }).click();
+    await page.getByRole('button', { name: /previous month/i }).click();
     await expect(page).toHaveURL('/admin/calendar/2026-08');
+  });
+
+  test('the jump-to-date input selects a day and crosses months', async ({ page }) => {
+    await page.goto('/admin/calendar/2026-08');
+    await page.waitForLoadState('networkidle');
+    await page.getByLabel(/jump to date/i).fill('2026-09-15');
+    await expect(page).toHaveURL('/admin/calendar/2026-09');
+    await expect(page.getByRole('heading', { name: /Transactions — Sep 15, 2026/i })).toBeVisible();
   });
 
   test('renders the ErrorBoundary for a malformed month param', async ({ page }) => {
