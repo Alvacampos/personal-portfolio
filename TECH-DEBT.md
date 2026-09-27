@@ -459,6 +459,12 @@ Currently both `en-US.json` (~10 KB) and `es-ES.json` (~10 KB) statically import
 
 Ran an experiment on 2026-07-08: `@formatjs/cli compile --ast --format simple` output at `app/intl/compiled/*.json`, wired into `IntlProvider` via a build step. Bundle-size delta on real chunks: **`root` +0.26 KB gz, `utils` unchanged**. The perf agent's ~8-10 KB gz claim assumed the ICU parser would tree-shake once messages arrive as AST — in practice `react-intl` v10 already tree-shakes the parser aggressively (source references to `icu-messageformat-parser` symbols don't appear in the built `utils` chunk), so precompile is a wash. Reverted the whole approach. Reopen only if a future react-intl major regresses the current tree-shake.
 
+### T19 — `getClassMaker`'s object-modifier form ignores the element (P1)
+
+Found 2026-09-27 while building `/admin`'s nav. `getClassMaker(block)(element, { key: bool })` appends `` `${block}--${key}` `` (the bare block, from the closure — see `app/utils/utils.tsx`'s `getClassMaker`), **not** `` `${block}__${element}--${key}` `` — so any call combining a non-empty `element` with an object modifier silently emits a block-level modifier class instead of an element-scoped one. CSS written as `.block__element--modifier` (the natural, expected form) never matches; the intended style silently never applies. Confirmed one real, pre-existing occurrence outside `/admin`: `app/components/Input/index.tsx`'s `getClasses('suggestion-item', { active, empty })` — `.input-component__suggestion-item--active`/`--empty` in `style.css` never match; the combobox's active-suggestion highlight has likely never actually rendered. Functionality isn't lost (`aria-selected` still drives real keyboard/screen-reader behavior), but the visual highlight is dead code that looks like it should work.
+
+Not fixed here — `/admin`'s own six occurrences (introduced across Phases A/B/D/F/G) were fixed in place with compound selectors (`.block__element.block--modifier`) rather than changing the utility, since `getClassMaker` is used everywhere and changing its behavior risks unrelated breakage across the whole public site. `Input`'s occurrence is still broken and deserves its own fix — either the same compound-selector treatment, or fixing `getClassMaker` itself (bigger: would need auditing every existing `--modifier` CSS selector in the codebase for ones that already, coincidentally, rely on the current block-only behavior).
+
 ---
 
 ## 2. Cleanup / data / docs

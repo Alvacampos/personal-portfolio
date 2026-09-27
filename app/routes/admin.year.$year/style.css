@@ -140,7 +140,10 @@
   cursor: pointer;
 }
 
-.admin-year-route__category-row--active {
+/* Compound selector, not `.admin-year-route__category-row--active` —
+ * getClassMaker's object-modifier form attaches the modifier to the bare
+ * block, not the element (TECH-DEBT.md T19). */
+.admin-year-route__category-row.admin-year-route--active {
   border-color: var(--accent);
   background: var(--bg-elevated);
 }
