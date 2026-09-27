@@ -54,6 +54,24 @@ Newest first. Each entry: what was decided or tried, and why — especially
 the "we tried X and backed out" entries, which are the ones worth having a
 record of.
 
+### 2026-09-26 — PR #333 adversarially reviewed: DRY fixes + a copy fix
+
+Reviewed the pushed diff fresh. Three findings:
+
+- `formatDateRange` was copy-pasted identically across both trip routes
+  — a real mini-algorithm (the null-`endDate` "ongoing" branch), not
+  "three similar lines," and exactly the kind of thing that's easy to
+  fix in one file and forget in the other. Extracted to
+  `app/utils/format-date-range.ts` with its own unit tests.
+- `TripResponseSchema` repeated `tripSummary`'s six fields by hand
+  instead of extending it — a later change to one could silently drift
+  from the other. Rewritten as `tripSummary.extend({ categories,
+transactions })`.
+- The trip detail's empty-state copy said "Nothing logged for this trip
+  **yet**" — but a trip can be `completed` with genuinely nothing
+  recorded, and "yet" wrongly implies more data is still coming, the way
+  it legitimately does for a month/year. Dropped the word.
+
 ### 2026-09-26 — Phase F shipped: trips list + detail
 
 - Promoted trips from "future, not v1" (backend kickoff §3.7/§6) to real
