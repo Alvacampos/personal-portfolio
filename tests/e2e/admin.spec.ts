@@ -19,7 +19,8 @@ test.describe('Admin login (/admin)', () => {
 test.describe('Admin Home (/admin/dashboard)', () => {
   test('shows this year as a grid of month cards, newest first', async ({ page }) => {
     await page.goto('/admin/dashboard');
-    await expect(page.getByRole('heading', { name: /current year/i, level: 1 })).toBeVisible();
+    // Bare year number heading, matching the yearly view's own <h1>.
+    await expect(page.getByRole('heading', { name: /^\d{4}$/, level: 1 })).toBeVisible();
     // Fixture-backed for the current year (docs/finance-frontend.md
     // §12/§13) — like the month view's own populated-vs-empty fixture
     // split, this degrades to the empty-state assertion below once the

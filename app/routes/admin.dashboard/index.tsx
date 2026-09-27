@@ -33,18 +33,18 @@ export async function loader() {
   const { monthlyTotals } = getYearFixture(year);
   // Newest first — Home is a "what's the latest" browse menu, not a
   // chronological read (§13).
-  return { months: [...monthlyTotals].reverse() };
+  return { year, months: [...monthlyTotals].reverse() };
 }
 
 export default function AdminHome() {
-  const { months } = useLoaderData<typeof loader>();
+  const { year, months } = useLoaderData<typeof loader>();
   const { locale } = useIntl();
 
   return (
     <div className={getClasses()}>
-      <h1 className={getClasses('title')}>
-        <FormattedMessage id="ADMIN_HOME_HEADING" />
-      </h1>
+      {/* Bare year number, matching the yearly view's own <h1> — no
+       * "Current Year" label needed on top of it. */}
+      <h1 className={getClasses('title')}>{year}</h1>
       {months.length === 0 ? (
         <p className={getClasses('empty-state')} role="status">
           <FormattedMessage id="ADMIN_HOME_EMPTY" />

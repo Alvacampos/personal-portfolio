@@ -58,6 +58,39 @@ Newest first. Each entry: what was decided or tried, and why — especially
 the "we tried X and backed out" entries, which are the ones worth having a
 record of.
 
+### 2026-09-27 — A fifth `width: 100%` overflow, plus two copy fixes
+
+A follow-up round of screenshots (same DevTools-inspection method as the
+entry below) found one more instance of the exact overflow pattern the
+previous entry describes, in a different element:
+`admin-nav-bar__nav-link`'s active state measured 240×40 in a 200px-wide
+rail — `width: 100%` (of the `<li>`) plus the desktop rule's `padding:
+12px 20px` (content-box, `<a>` tags don't get border-box by default)
+added up to 40px over. Fixed the same way: dropped the redundant
+`width: 100%`.
+
+Checked the rest of the admin CSS proactively for the same shape after
+finding this a second time — three other `width: 100%` + padding
+combinations exist (the category-row buttons in month/year/trip
+detail), but those are `<button>` elements, which get `box-sizing:
+border-box` from the browser's default UA stylesheet, so they were
+never actually at risk. Confirmed empirically (computed `box-sizing:
+border-box` on one), not just assumed.
+
+Two copy fixes from the same review round:
+
+- `ADMIN_CATEGORY_RENT_EXPENSAS` mixed languages under English
+  ("Rent / Expensas") — the "Expensas" half only made sense as a
+  deliberate ARS-locale term when the whole label was Spanish. Split to
+  clean single-language labels: "Rent" (en) / "Alquiler" (es). The
+  `rent_expensas` category id itself is unchanged — this only affects
+  the two display strings.
+- Home's heading dropped "Current Year"/"This year" entirely in favor
+  of just the bare current year number, matching the yearly view's own
+  `<h1>` exactly (`ADMIN_HOME_HEADING` removed from both intl files as
+  now-unused). Simpler than solving the capitalization question the
+  English/Spanish title-case mismatch had raised.
+
 ### 2026-09-27 — Real-browser review of PR #335 surfaced four root causes
 
 Screenshots + DevTools inspection against the running `admin/phase-h-home`
