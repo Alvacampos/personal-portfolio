@@ -2,16 +2,8 @@ import { format, parseISO } from 'date-fns';
 
 import type { Locale } from '~/intl';
 
+import { capitalizeFirst } from './capitalize-first';
 import { getDateFnsLocale } from './date-fns-locale';
-
-// date-fns' Spanish locale renders month abbreviations lowercase ("ene",
-// "feb" — correct Spanish orthography for running prose), but a date
-// range standing alone in a card reads as a title/label, not a
-// sentence, so it wants the same capitalized look English already gets
-// for free ("Jan" comes capitalized out of date-fns' English locale).
-function capitalizeFirst(value: string): string {
-  return value.length > 0 ? value[0].toUpperCase() + value.slice(1) : value;
-}
 
 // Shared by the trips list and trip detail routes — the only two places
 // that need to render a YYYY-MM-DD date range as a human string.
