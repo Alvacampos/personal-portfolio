@@ -1,0 +1,93 @@
+{
+  "fetchTime": "2026-09-27T20:42:10.931Z",
+  "requestedUrl": "https://gonzalo-alvarez-campos-cv.com/",
+  "finalUrl": "https://gonzalo-alvarez-campos-cv.com/",
+  "lighthouseVersion": "13.4.1",
+  "commit": "5594b49",
+  "categories": {
+    "performance": 0.87,
+    "accessibility": 1,
+    "best-practices": 1,
+    "seo": 1
+  },
+  "metrics": {
+    "fcp": {
+      "displayValue": "3.0 s",
+      "numericValue": 2966.132,
+      "score": 0.51
+    },
+    "lcp": {
+      "displayValue": "3.3 s",
+      "numericValue": 3300.4219999999996,
+      "score": 0.69
+    },
+    "si": {
+      "displayValue": "3.0 s",
+      "numericValue": 2966.132,
+      "score": 0.94
+    },
+    "tbt": {
+      "displayValue": "0 ms",
+      "numericValue": 0,
+      "score": 1
+    },
+    "cls": {
+      "displayValue": "0",
+      "numericValue": 0.0001990404033765582,
+      "score": 1
+    },
+    "tti": {
+      "displayValue": "3.3 s",
+      "numericValue": 3300.4219999999996,
+      "score": 0.94
+    },
+    "ttfb": 334
+  },
+  "failingAudits": [
+    {
+      "id": "first-contentful-paint",
+      "title": "First Contentful Paint",
+      "score": 0.51
+    },
+    {
+      "id": "largest-contentful-paint",
+      "title": "Largest Contentful Paint",
+      "score": 0.69
+    },
+    {
+      "id": "speed-index",
+      "title": "Speed Index",
+      "score": 0.94
+    },
+    {
+      "id": "interactive",
+      "title": "Time to Interactive",
+      "score": 0.94
+    },
+    {
+      "id": "unused-javascript",
+      "title": "Reduce unused JavaScript",
+      "score": 0
+    },
+    {
+      "id": "cache-insight",
+      "title": "Use efficient cache lifetimes",
+      "score": 0.5
+    },
+    {
+      "id": "legacy-javascript-insight",
+      "title": "Legacy JavaScript",
+      "score": 0.5
+    },
+    {
+      "id": "network-dependency-tree-insight",
+      "title": "Network dependency tree",
+      "score": 0
+    },
+    {
+      "id": "render-blocking-insight",
+      "title": "Render-blocking requests",
+      "score": 0
+    }
+  ]
+}

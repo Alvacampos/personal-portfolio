@@ -1,9 +1,9 @@
 {
-  "fetchTime": "2026-09-21T20:41:37.339Z",
-  "requestedUrl": "https://gonzalo-alvarez-campos-cv.com/skills",
-  "finalUrl": "https://gonzalo-alvarez-campos-cv.com/skills",
+  "fetchTime": "2026-09-27T20:42:24.895Z",
+  "requestedUrl": "https://gonzalo-alvarez-campos-cv.com/education",
+  "finalUrl": "https://gonzalo-alvarez-campos-cv.com/education",
   "lighthouseVersion": "13.4.1",
-  "commit": "4fc3281",
+  "commit": "5594b49",
   "categories": {
     "performance": 0.9,
     "accessibility": 1,
@@ -12,23 +12,23 @@
   },
   "metrics": {
     "fcp": {
-      "displayValue": "2.7 s",
-      "numericValue": 2655.5077,
-      "score": 0.62
+      "displayValue": "2.6 s",
+      "numericValue": 2616.5495,
+      "score": 0.63
     },
     "lcp": {
       "displayValue": "3.0 s",
-      "numericValue": 3008.7692500000003,
-      "score": 0.78
+      "numericValue": 3049.6485000000002,
+      "score": 0.77
     },
     "si": {
-      "displayValue": "2.7 s",
-      "numericValue": 2655.5077,
+      "displayValue": "2.6 s",
+      "numericValue": 2616.5495,
       "score": 0.97
     },
     "tbt": {
-      "displayValue": "10 ms",
-      "numericValue": 7,
+      "displayValue": "0 ms",
+      "numericValue": 0,
       "score": 1
     },
     "cls": {
@@ -38,21 +38,21 @@
     },
     "tti": {
       "displayValue": "3.0 s",
-      "numericValue": 3008.7692500000003,
-      "score": 0.96
+      "numericValue": 3049.6485000000002,
+      "score": 0.95
     },
-    "ttfb": 84
+    "ttfb": 28
   },
   "failingAudits": [
     {
       "id": "first-contentful-paint",
       "title": "First Contentful Paint",
-      "score": 0.62
+      "score": 0.63
     },
     {
       "id": "largest-contentful-paint",
       "title": "Largest Contentful Paint",
-      "score": 0.78
+      "score": 0.77
     },
     {
       "id": "speed-index",
@@ -62,7 +62,12 @@
     {
       "id": "interactive",
       "title": "Time to Interactive",
-      "score": 0.96
+      "score": 0.95
+    },
+    {
+      "id": "unused-javascript",
+      "title": "Reduce unused JavaScript",
+      "score": 0
     },
     {
       "id": "cache-insight",

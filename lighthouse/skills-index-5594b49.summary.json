@@ -1,30 +1,30 @@
 {
-  "fetchTime": "2026-06-26T16:54:20.633Z",
+  "fetchTime": "2026-09-27T20:42:18.131Z",
   "requestedUrl": "https://gonzalo-alvarez-campos-cv.com/skills",
   "finalUrl": "https://gonzalo-alvarez-campos-cv.com/skills",
-  "lighthouseVersion": "13.4.0",
-  "commit": "46d1ce7",
+  "lighthouseVersion": "13.4.1",
+  "commit": "5594b49",
   "categories": {
-    "performance": 0.95,
+    "performance": 0.91,
     "accessibility": 1,
     "best-practices": 1,
     "seo": 1
   },
   "metrics": {
     "fcp": {
-      "displayValue": "2.0 s",
-      "numericValue": 1984.2887999999998,
-      "score": 0.85
+      "displayValue": "2.6 s",
+      "numericValue": 2639.2208999999993,
+      "score": 0.62
     },
     "lcp": {
-      "displayValue": "2.6 s",
-      "numericValue": 2608.7888,
-      "score": 0.87
+      "displayValue": "3.0 s",
+      "numericValue": 2967.6626999999994,
+      "score": 0.79
     },
     "si": {
-      "displayValue": "2.9 s",
-      "numericValue": 2928.387009412578,
-      "score": 0.95
+      "displayValue": "2.6 s",
+      "numericValue": 2639.2208999999993,
+      "score": 0.97
     },
     "tbt": {
       "displayValue": "0 ms",
@@ -37,37 +37,32 @@
       "score": 1
     },
     "tti": {
-      "displayValue": "2.6 s",
-      "numericValue": 2608.7888000000003,
-      "score": 0.98
+      "displayValue": "3.0 s",
+      "numericValue": 2967.6626999999994,
+      "score": 0.96
     },
-    "ttfb": 109
+    "ttfb": 79
   },
   "failingAudits": [
     {
       "id": "first-contentful-paint",
       "title": "First Contentful Paint",
-      "score": 0.85
+      "score": 0.62
     },
     {
       "id": "largest-contentful-paint",
       "title": "Largest Contentful Paint",
-      "score": 0.87
+      "score": 0.79
     },
     {
       "id": "speed-index",
       "title": "Speed Index",
-      "score": 0.95
+      "score": 0.97
     },
     {
       "id": "interactive",
       "title": "Time to Interactive",
-      "score": 0.98
-    },
-    {
-      "id": "unused-javascript",
-      "title": "Reduce unused JavaScript",
-      "score": 0
+      "score": 0.96
     },
     {
       "id": "cache-insight",
@@ -75,9 +70,9 @@
       "score": 0.5
     },
     {
-      "id": "forced-reflow-insight",
-      "title": "Forced reflow",
-      "score": 0
+      "id": "legacy-javascript-insight",
+      "title": "Legacy JavaScript",
+      "score": 0.5
     },
     {
       "id": "network-dependency-tree-insight",
@@ -87,7 +82,7 @@
     {
       "id": "render-blocking-insight",
       "title": "Render-blocking requests",
-      "score": 0.5
+      "score": 0
     }
   ]
 }
