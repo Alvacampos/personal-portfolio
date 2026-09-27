@@ -115,6 +115,39 @@
   border: 0;
 }
 
+.admin-year-route__categories-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+  align-items: flex-start;
+  margin-bottom: var(--space-12);
+
+  /* Reaches into SearchFilterBar's own class to zero its standalone
+   * bottom margin — that margin exists for when it's the sole control
+   * stacked above a list, not shared in a row with this toolbar's own
+   * sibling gap. */
+  & .search-filter-bar {
+    flex: 1 1 240px;
+    margin-bottom: 0;
+  }
+}
+
+.admin-year-route__month-jump {
+  height: var(--space-40);
+  padding: 0 var(--space-12);
+  border-radius: var(--border-6);
+  border: 1px solid var(--border-default);
+  background-color: var(--bg-surface);
+  color: var(--fg-base);
+  font-size: var(--font-14);
+  cursor: pointer;
+}
+
+.admin-year-route__month-jump:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 .admin-year-route__category-list {
   list-style: none;
   margin: 0;

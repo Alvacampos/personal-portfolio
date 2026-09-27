@@ -1,7 +1,13 @@
 import { useState } from 'react';
 import { FormattedMessage, useIntl } from 'react-intl';
 import type { LoaderFunctionArgs, MetaFunction } from 'react-router';
-import { isRouteErrorResponse, Link, useLoaderData, useRouteError } from 'react-router';
+import {
+  isRouteErrorResponse,
+  Link,
+  useLoaderData,
+  useNavigate,
+  useRouteError,
+} from 'react-router';
 
 import BarChart from '~/components/BarChart';
 import PieChart from '~/components/PieChart';
@@ -63,8 +69,13 @@ export function ErrorBoundary() {
 export default function AdminYear() {
   const { year, prevYear, nextYear } = useLoaderData<typeof loader>();
   const { formatMessage, locale } = useIntl();
+  const navigate = useNavigate();
   const [showUsd, setShowUsd] = useState(false);
   const hasData = year.categories.length > 0;
+
+  function goToMonth(yyyyMm: string) {
+    navigate(`/admin/month/${yyyyMm}`);
+  }
 
   const { activeCategoryId, activeCategory, toggleCategory, clearCategory } = useCategoryIsolation(
     year.categories,
@@ -158,6 +169,7 @@ export default function AdminYear() {
                 value: entry.total.ars,
               }))}
               locale={locale as Locale}
+              onBarClick={goToMonth}
             />
             {/* Accessible equivalent of the chart above — visually hidden,
              * real content for screen readers. Unlike the pie chart, the
@@ -187,13 +199,36 @@ export default function AdminYear() {
             <h2 id="categories-heading" className={getClasses('section-title')}>
               <FormattedMessage id="ADMIN_CATEGORIES_HEADING" />
             </h2>
-            <SearchFilterBar
-              value={categorySearch}
-              onChange={setCategorySearch}
-              onClear={clearFilters}
-              label={formatMessage({ id: 'ADMIN_SEARCH_CATEGORIES_LABEL' })}
-              hasActiveFilter={hasActiveFilter}
-            />
+            <div className={getClasses('categories-toolbar')}>
+              <SearchFilterBar
+                value={categorySearch}
+                onChange={setCategorySearch}
+                onClear={clearFilters}
+                label={formatMessage({ id: 'ADMIN_SEARCH_CATEGORIES_LABEL' })}
+                hasActiveFilter={hasActiveFilter}
+              />
+              {/* Accessible equivalent of the bar chart's onBarClick above —
+               * a keyboard/screen-reader-usable way to jump straight to a
+               * given month's own page, same division of labor as
+               * PieChart's onSliceClick + the category list below. */}
+              <select
+                className={getClasses('month-jump')}
+                aria-label={formatMessage({ id: 'ADMIN_JUMP_TO_MONTH_LABEL' })}
+                value=""
+                onChange={(event) => {
+                  if (event.target.value) goToMonth(event.target.value);
+                }}
+              >
+                <option value="" disabled>
+                  {formatMessage({ id: 'ADMIN_JUMP_TO_MONTH_LABEL' })}
+                </option>
+                {[...year.monthlyTotals].reverse().map((entry) => (
+                  <option key={entry.month} value={entry.month}>
+                    {formatMonthLabel(entry.month, locale as Locale)}
+                  </option>
+                ))}
+              </select>
+            </div>
             {filteredCategories.length === 0 ? (
               <p className={getClasses('empty-state')} role="status">
                 <FormattedMessage id="ADMIN_NO_MATCHING_CATEGORIES" />

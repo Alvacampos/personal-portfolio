@@ -58,6 +58,27 @@ Newest first. Each entry: what was decided or tried, and why — especially
 the "we tried X and backed out" entries, which are the ones worth having a
 record of.
 
+### 2026-09-27 — Year view: click-to-month, resolved via a genuine fork
+
+"Selecting a month should autofilter by that month" had two materially
+different readings: navigate to that month's own page (which already
+has the full category/transaction breakdown), or isolate in place on
+the Year page (which can't actually work — `YearResponse.categories`
+is a year-wide aggregate with no per-month breakdown in the schema,
+so there's nothing to filter the category list _with_). Asked rather
+than guessed, since building the wrong one meant either a wasted
+schema change or a half-working feature that looks like it filters but
+doesn't. **Decided: navigate.**
+
+Implemented as two ways to trigger the same navigation, mirroring
+PieChart's existing onSliceClick + category-list division of labor:
+`BarChart` gained an `onBarClick` prop (mouse/touch only, chart stays
+`aria-hidden`) and a new "Jump to month" `<select>` next to the
+category search bar serves as the keyboard/screen-reader-usable
+equivalent — not optional decoration, the actual accessible path to
+the same action. Both call the same `goToMonth` navigating to
+`/admin/month/:yyyyMm`.
+
 ### 2026-09-27 — Trip cards: status + duration badges, capitalized dates
 
 The trips list cards showed only a name, date range, and total —

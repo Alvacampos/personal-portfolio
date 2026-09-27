@@ -14,6 +14,7 @@
   "ADMIN_CATEGORY_UTILITIES": "Utilities",
   "ADMIN_CLEAR_FILTERS": "Clear filters",
   "ADMIN_HOME_EMPTY": "Nothing logged yet — send an expense in the Telegram group to get started.",
+  "ADMIN_JUMP_TO_MONTH_LABEL": "Jump to month",
   "ADMIN_LOGIN_SIGN_IN": "Sign in with Google",
   "ADMIN_LOGIN_SUBTITLE": "Private — for two people only.",
   "ADMIN_LOGIN_TITLE": "Finance tracker",

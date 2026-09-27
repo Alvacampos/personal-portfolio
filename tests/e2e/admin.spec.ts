@@ -173,6 +173,25 @@ test.describe('Admin year view (/admin/year/:year)', () => {
     await expect(monthlyTable.getByText(/January 2025/i)).toBeAttached();
   });
 
+  test('clicking a bar navigates to that month’s own page', async ({ page }) => {
+    await page.goto('/admin/year/2025');
+    await page.waitForLoadState('networkidle');
+    // Bars render oldest-first (Jan..Dec) — the 3rd bar is March.
+    await page.locator('.recharts-bar-rectangle').nth(2).click({ force: true });
+    await expect(page).toHaveURL('/admin/month/2025-03');
+  });
+
+  test('the month dropdown is a keyboard-usable equivalent to clicking a bar', async ({ page }) => {
+    await page.goto('/admin/year/2025');
+    await page.waitForLoadState('networkidle');
+    // `.selectOption()` can otherwise race hydration on a freshly-loaded
+    // page and get silently ignored — same settle this suite's search
+    // tests already use for the same class of problem.
+    await page.waitForTimeout(200);
+    await page.selectOption('.admin-year-route__month-jump', '2025-03');
+    await expect(page).toHaveURL('/admin/month/2025-03');
+  });
+
   test('shows fewer bars for the partial (YTD) year', async ({ page }) => {
     await page.goto('/admin/year/2026');
     await page.waitForLoadState('networkidle');
