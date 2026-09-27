@@ -5,15 +5,17 @@
 }
 
 .admin-layout__content {
-  /* No global box-sizing: border-box reset exists in this repo (public
-   * routes that need it opt in per-element) — without this, `width:
-   * 100%` + `padding` add up to wider than the parent and overflow the
-   * viewport horizontally on mobile. */
-  box-sizing: border-box;
+  /* No explicit `width` — a block element's default `auto` width
+   * already fills the container exactly, subtracting padding/border
+   * as part of what "auto" means, in default content-box sizing.
+   * `width: 100%` was redundant for that and actively wrong once
+   * combined with `padding`: 100% of the container plus padding on
+   * top is wider than the container, overflowing on mobile (no
+   * `max-width` constraint applies below the breakpoint where it'd
+   * otherwise clip). */
   padding: var(--space-16);
   max-width: 1024px;
   margin: 0 auto;
-  width: 100%;
   /* Clears the fixed bottom tab bar (mobile) — not derived from a
    * shared token since AdminNavBar's own height isn't exposed as one;
    * measured at ~132px (utility row + nav links + bordered sign-out

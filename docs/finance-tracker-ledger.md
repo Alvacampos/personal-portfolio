@@ -85,12 +85,21 @@ distinct root causes, not one bug wearing four costumes:
   `root--admin` modifier (computed once in `is-admin-path.ts`, shared
   between `root.tsx`'s `Layout` and `App`) and scoping the padding-left
   rule to skip it.
-- **No global `box-sizing: border-box` reset exists in this repo**
-  (routes that need it opt in per-element, e.g. `skills._index`,
-  `contact._index`) — `admin-layout__content` never got it, so `width:
-100%` + `padding` added up to wider than its parent and caused a real
-  horizontal overflow on mobile (content clipped at the right edge).
-  Fixed by adding `box-sizing: border-box` to that one element.
+- **`admin-layout__content`'s explicit `width: 100%` overflowed its
+  parent on mobile** once combined with `padding` in default
+  content-box sizing (100% of the container, plus padding on top, is
+  wider than the container — clipped content on the right edge). First
+  fix attempt added `box-sizing: border-box`, which stopped the
+  overflow but silently shrank the desktop reading column (the
+  `max-width: 1024px` cap now included the nav-clearance
+  `padding-left`, so the actual content area became ~800px instead of
+  1024px — only caught by testing a genuinely wide viewport during the
+  adversarial-review pass, since it wasn't visible at 1280px). The
+  actual fix: just remove `width: 100%`. A block element's default
+  `auto` width already fills the container exactly, subtracting
+  padding as part of what "auto" means — the explicit `width: 100%`
+  was both unnecessary and the real cause, and removing it fixes the
+  overflow without touching how `max-width` interacts with padding.
 - **The sign-out button's restyle (bordered pill, more padding) made the
   mobile fixed nav taller** without a matching bump to the content
   wrapper's bottom clearance — Playwright's mobile suite caught this for
