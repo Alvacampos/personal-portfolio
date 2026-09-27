@@ -206,6 +206,11 @@ possibly planning ahead — not just after-the-fact tracking.
 - No Claude analysis on the trip view for v1 (that's specifically a
   _monthly_ feature per the brief) — worth reconsidering once monthly
   analysis is proven out, not before.
+- **Reopened, narrowly, as Phase K: manual planned line items.** Phase
+  J's read-only budget-vs-actual didn't cover actually _planning_ a
+  trip before it happens — just displaying a single number set ahead of
+  time. See §15 for the design (schema, write-boundary implications,
+  what does and doesn't change from Phase J).
 
 ---
 
@@ -341,9 +346,12 @@ Recharts (§1, §7), the monthly analysis gets a frontend "Regenerate"
 button (§9), the yearly last-year comparison is a fast-follow not v1 (§5),
 and — reopened after Phases A–F shipped, then resolved and later shipped
 as Phase J — vacation planning is a read-only planned-vs-actual view, not
-a write UI (§6, §12). No open forks remain in this doc; new ones that come
-up during implementation get added
-here rather than decided silently.
+a write UI (§6, §12). Reopened again, narrowly, after Phase J shipped: a
+trip's `budget` alone doesn't let you actually plan one out line by line,
+so Phase K adds manual planned-item entry — a deliberate, scoped
+exception to the read-only principle, not a reversal of it (§6, §15). No
+open forks remain in this doc; new ones that come up during
+implementation get added here rather than decided silently.
 
 ---
 
@@ -397,6 +405,12 @@ public site (§1's reversals):
   the trip detail view shows `budget` alongside the actual total when a
   trip has one set. No write endpoints, no forms; the frontend stays
   read-only apart from the existing regenerate-analysis exception.
+- **Phase K — Manual planned line items (§15).** The first phase that
+  needs new backend surface rather than just new views over existing
+  data — a real, frontend-originated write, not something relayed from
+  Telegram. Frontend UI ships against fixtures first (local state only,
+  same as every prior phase), the real persistence lands once the
+  backend adds the endpoints §15 describes.
 
 ---
 
@@ -487,3 +501,118 @@ aria-label="…">` with `<th scope="col">` weekday headers (visually
 - No isolate-a-category interaction here — a calendar's organizing axis is
   the day, not the category; category breakdown stays the month/year/trip
   views' job.
+
+---
+
+## 15. Phase K — manual planned line items for vacation planning
+
+Raised during an adversarial review of the shipped admin section
+(`docs/finance-tracker-admin-review-2026-09-27.md`, tracking notes,
+not committed): Phase J's `budget` field lets you set a single
+target number for a trip, but doesn't let you actually plan one out —
+there's no way to jot down "flights: ~$180,000, hotel: ~$300,000"
+ahead of time and see it add up. This section resolves that on paper
+before any code changes, per this project's own convention of writing
+forks down rather than deciding them silently mid-implementation.
+
+### Why this is a bigger decision than Phases A–J
+
+Every phase so far — including Phase J's budget display — was "a new
+_view_ over data the backend already returns" (§14's calendar is the
+clearest example: zero new backend surface, purely derived). Manually
+adding a planned item is categorically different: it's a **write the
+frontend itself originates**, not something relayed from Telegram.
+That's exactly the boundary `finance-tracker.md` §6.6 draws ("the real
+write-boundary is who's in the Telegram group") — so this is a
+deliberate, narrow exception to it, not an oversight, and it needs to
+be scoped tightly enough that it can't be mistaken for reopening
+expense-entry in general.
+
+### What doesn't change
+
+- **Real expense data still only ever arrives via Telegram.** Nothing
+  here lets either of you log an actual, already-spent expense from
+  the UI. That boundary stays exactly where Phase J left it.
+- **`total`, `categories`, and the Phase J budget-vs-actual comparison
+  stay scoped to real, Telegram-sourced `transactions` only.** A
+  planned item never enters that math — see the schema below for how
+  that's enforced structurally, not just by convention.
+
+### What's new: `plannedItems`
+
+A trip gains a new, additive array — `plannedItems`, sitting alongside
+`transactions` on `TripResponse`, never merged into it:
+
+```ts
+type PlannedItem = {
+  id: string;
+  description: string;
+  estimatedAmount: { ars: number; usd: number };
+  categoryId: string | null; // optional — a rough breakdown while planning
+  done: boolean; // manually toggled, never automatic — see reconciliation below
+};
+```
+
+Rendered on `/admin/trips/:tripId` as a new "Planning" section, above
+"Categories"/"Transactions" — its own list, its own add-item form
+(description + estimated ARS amount + optional category), a done
+checkbox and a delete action per row. The section only renders when
+there's something to show (`plannedItems.length > 0`, or the trip is
+`planned`/`active`) — a `completed` trip that never used planning
+doesn't grow an empty section, same empty-state discipline as
+everywhere else in this app.
+
+### Reconciliation: no auto-matching, on purpose
+
+The obvious next question: when the real Telegram-logged flight
+expense eventually lands as a `transaction`, what happens to the
+planned item that estimated it?
+
+**Decided: nothing happens automatically.** No matching by
+description, amount, or date — that's real complexity (fuzzy matching,
+false positives) for a tool two people use directly and could just as
+easily handle themselves. Instead: a planned item is a lightweight
+**checklist entry**, not a second ledger. Once the real expense is
+logged and shows up under "Transactions," whoever's looking at the
+trip manually checks the planned item off (`done: true`) or deletes
+it. The two lists coexist and can visibly disagree for a while (a
+planned "~$180,000" next to a real "$175,000" once it lands) — that's
+expected, not a bug, since the planned figure was always an estimate.
+
+This is also what keeps double-counting structurally impossible rather
+than merely unlikely: `plannedItems` is never summed into `total`, so
+there's no code path where a planned line item could inflate the
+trip's actual spend, regardless of its `done` state.
+
+### New backend surface (the actual scope-widening part)
+
+Because this is a real write, it needs real endpoints —
+`finance-tracker-backend-kickoff.md` §6's contract gets three new
+rows once the backend is built:
+
+- `POST /api/trips/{id}/planned-items`
+- `PATCH /api/trips/{id}/planned-items/{itemId}` (edit, or flip `done`)
+- `DELETE /api/trips/{id}/planned-items/{itemId}`
+
+All session-authed, same as every other `/api/trips` endpoint.
+`GET /api/trips/{id}` gains `plannedItems` in its response shape.
+
+**Until the backend exists** (you're building it last, per the current
+plan), the frontend piece of Phase K ships the same way every prior
+phase did: against fixtures, with add/edit/delete only mutating local
+component state (`useState`, reset on refresh) — enough to validate
+the interaction design and demo it, explicitly not persisted yet. This
+is called out here so it doesn't get mistaken for a finished feature
+once it's built — the real backend wiring is Phase C's job, same as
+every other endpoint.
+
+### Also fixes, as part of the same UI work
+
+A trip's `status` (`planned` / `active` / `completed`) is currently
+only shown on the `/admin/trips` list card — the detail page never
+renders it (a real gap the same review found independently: a
+`planned` trip with nothing spent yet is visually indistinguishable
+from a `completed` trip that simply has no data). A planning UI is
+pointless if the page it lives on doesn't first say "this hasn't
+happened yet," so Phase K's detail-page work adds the status badge to
+the header too.

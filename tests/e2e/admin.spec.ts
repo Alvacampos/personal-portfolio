@@ -19,8 +19,10 @@ test.describe('Admin login (/admin)', () => {
 test.describe('Admin Home (/admin/dashboard)', () => {
   test('shows this year as a grid of month cards, newest first', async ({ page }) => {
     await page.goto('/admin/dashboard');
-    // Bare year number heading, matching the yearly view's own <h1>.
-    await expect(page.getByRole('heading', { name: /^\d{4}$/, level: 1 })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Overview', level: 1 })).toBeVisible();
+    // The year sits underneath the heading as a subtitle, not standing
+    // in for the page's own name.
+    await expect(page.getByText(/^\d{4}$/)).toBeVisible();
     // Fixture-backed for the current year (docs/finance-frontend.md
     // §12/§13) — like the month view's own populated-vs-empty fixture
     // split, this degrades to the empty-state assertion below once the
@@ -300,6 +302,27 @@ test.describe('Admin calendar view (/admin/calendar/:yyyyMm)', () => {
     await expect(page.locator('.admin-calendar-route__day--tier-low')).toHaveCount(6);
   });
 
+  test('the tier colors have a visible legend and an accessible equivalent', async ({ page }) => {
+    await page.goto('/admin/calendar/2026-08');
+    await page.waitForLoadState('networkidle');
+    await expect(page.locator('.admin-calendar-route__legend')).toContainText('Low-spending day');
+    await expect(page.locator('.admin-calendar-route__legend')).toContainText(
+      'Moderate-spending day'
+    );
+    await expect(page.locator('.admin-calendar-route__legend')).toContainText('High-spending day');
+    // The color isn't the only signal — the day button's own accessible
+    // name carries the same information a screen reader can't see.
+    await expect(
+      page.getByRole('button', { name: /August 5th, 2026 — High-spending day/ })
+    ).toBeVisible();
+
+    // A month with no data at all shouldn't grow an empty legend
+    // explaining colors that don't appear anywhere on its grid.
+    await page.goto('/admin/calendar/2026-09');
+    await page.waitForLoadState('networkidle');
+    await expect(page.locator('.admin-calendar-route__legend')).toHaveCount(0);
+  });
+
   test('selecting a day shows its transactions; selecting again collapses', async ({ page }) => {
     await page.goto('/admin/calendar/2026-08');
     await page.waitForLoadState('networkidle');
@@ -328,6 +351,23 @@ test.describe('Admin calendar view (/admin/calendar/:yyyyMm)', () => {
     await expect(page).toHaveURL('/admin/calendar/2026-09');
     await page.getByRole('button', { name: /previous month/i }).click();
     await expect(page).toHaveURL('/admin/calendar/2026-08');
+  });
+
+  test('prev/next navigation clears a selected day rather than leaving it stale', async ({
+    page,
+  }) => {
+    await page.goto('/admin/calendar/2026-08');
+    await page.waitForLoadState('networkidle');
+    await page.getByRole('button', { name: /August 5th, 2026/ }).click();
+    await expect(page.getByRole('heading', { name: /Transactions — Aug 5, 2026/i })).toBeVisible();
+
+    await page.getByRole('button', { name: /next month/i }).click();
+    await expect(page).toHaveURL('/admin/calendar/2026-09');
+    // No day-detail panel at all — not the previous month's date paired
+    // with the new month's (empty) transaction list, which would read
+    // as "Aug 5 had nothing logged" even though it did.
+    await expect(page.getByRole('heading', { name: /Transactions —/i })).toHaveCount(0);
+    await expect(page.getByLabel(/jump to date/i)).toHaveValue('');
   });
 
   test('the jump-to-date input selects a day and crosses months', async ({ page }) => {
@@ -487,6 +527,19 @@ test.describe('Admin trip detail (/admin/trips/:tripId)', () => {
     await expect(page.getByText('Budget: $ 600.000')).toBeVisible();
     await expect(page.getByText('$ 600.000 left')).toBeVisible();
     await expect(page.getByText(/nothing logged for this trip\./i)).toBeVisible();
+  });
+
+  test('a trip’s status is visible on its own detail page, not just the list card', async ({
+    page,
+  }) => {
+    // Previously only shown on the list card — a planned trip with
+    // nothing spent yet looked identical to a completed trip that
+    // simply had no data, once you were on its own page.
+    await page.goto('/admin/trips/mendoza-2026-11');
+    await expect(page.getByText('Planned', { exact: true })).toBeVisible();
+
+    await page.goto('/admin/trips/bariloche-2026-01');
+    await expect(page.getByText('Completed', { exact: true })).toBeVisible();
   });
 
   test('a trip with no budget set shows no budget comparison', async ({ page }) => {

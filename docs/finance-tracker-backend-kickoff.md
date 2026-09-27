@@ -63,14 +63,15 @@ is just the endpoint list in §6.
   turns out to be wrong in practice.
 - Recurring-expense automation (rent/expensas gets typed in by hand each
   month for v1). Cheap fast-follow once the core loop is proven — see §8.
-- Any write endpoint the frontend calls directly — corrections happen via
-  Telegram (§3.3), not a form on the site; the frontend is genuinely
-  read-only. **One narrow exception**: `POST
-/api/months/{yyyy-mm}/analysis/regenerate` (§6) backs a "Regenerate"
-  button on the frontend's monthly view — it only recomputes a derived
-  summary from data that already exists, it can't create or alter an
-  expense, so it isn't a workaround for the frontend editing financial
-  records.
+- Any write endpoint the frontend calls directly for _expense_ data —
+  corrections happen via Telegram (§3.3), not a form on the site; the
+  frontend is genuinely read-only for real financial records. **Two
+  narrow exceptions**, both incapable of creating or altering an actual
+  expense: `POST /api/months/{yyyy-mm}/analysis/regenerate` (§6) only
+  recomputes a derived summary from data that already exists; the
+  `planned-items` endpoints (§6, §3.7, frontend Phase K) only ever write
+  forward-looking estimates for a trip that hasn't happened yet, never
+  summed into any real total.
 - Migrating the existing portfolio's CV content into this backend — that
   data stays exactly where it is (static JSON in the portfolio repo,
   edge-cached, zero external calls). This is a fully separate system that
@@ -308,11 +309,16 @@ retrofit:
   `trip_id` on `expenses`. `NULL` = ordinary monthly expense; tagged =
   counted toward that trip instead.
 - Also add `status` (`planned` | `active` | `completed`) and a nullable
-  `budget` column to `trips` now — the frontend's trip-**planning** UI is
-  a deliberate wait-and-see fast-follow (build it once a couple of trips
-  have been tracked retrospectively, not on the assumption planning is
-  wanted), but the columns are cheap to bake into the schema today
-  regardless.
+  `budget` column to `trips` now — the frontend has since shipped both:
+  `status` (Phase F) and a read-only `budget`-vs-actual display (Phase
+  J, `finance-frontend.md` §6). A further frontend phase
+  (`finance-frontend.md` §15, "Phase K") adds manually-entered planned
+  line items ahead of a trip — a new `planned_items` table (`trip_id`,
+  `description`, `estimated_amount`, `category_id` nullable, `done`
+  boolean), plus the write endpoints §6 below adds for it. Unlike
+  everything else in this contract, those are real frontend-originated
+  writes, not something relayed from Telegram — `finance-frontend.md`
+  §15 has the reasoning for why that's a deliberate, narrow exception.
 - Month/year views **exclude** trip-tagged expenses from the normal
   running totals by default (a vacation shouldn't make it look like you
   blew the monthly grocery budget) — with trips shown as their own
@@ -447,32 +453,39 @@ the work on the write side.
 ## 6. The API contract (what the frontend needs)
 
 The frontend (a separate, existing portfolio repo) has three read views —
-month, year/YTD, and a vacation/trips section — plus one derived-summary
-write exception. Every `GET` below returns **pre-aggregated** JSON: sums
-and groupings computed in SQL/Python server-side, not raw rows for the
-frontend to crunch. Month/year responses include both a native-currency
-total and a USD-equivalent total (§3.5).
+month, year/YTD, and a vacation/trips section — plus two write
+exceptions: a derived-summary regenerate, and (new, Phase K) manually
+adding a trip's planned line items. Every `GET` below returns
+**pre-aggregated** JSON: sums and groupings computed in SQL/Python
+server-side, not raw rows for the frontend to crunch. Month/year
+responses include both a native-currency total and a USD-equivalent
+total (§3.5).
 
-| Method + path                                    | Purpose                                                                                                                        | Auth                           |
-| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------ | ------------------------------ |
-| `POST /telegram/webhook`                         | Receives Telegram updates                                                                                                      | Telegram `secret_token` header |
-| `GET /api/auth/google/login`                     | Redirects to Google's consent screen                                                                                           | none (this _is_ the login)     |
-| `GET /api/auth/google/callback`                  | Verifies identity against the 2-email allowlist, issues session JWT                                                            | none (verifies itself)         |
-| `GET /api/months/{yyyy-mm}`                      | Total, category breakdown, transaction list for one month                                                                      | session                        |
-| `GET /api/years/{yyyy}`                          | Total, per-month totals, category breakdown for a year                                                                         | session                        |
-| `GET /api/ytd`                                   | Same shape as `/years`, bounded at today                                                                                       | session                        |
-| `GET /api/categories`                            | Category list (for chart legends/filters)                                                                                      | session                        |
-| `GET /api/months/{yyyy-mm}/analysis`             | Cached Claude-written monthly analysis; generates + caches on first request (Phase 4C)                                         | session                        |
-| `POST /api/months/{yyyy-mm}/analysis/regenerate` | Forces a fresh analysis, overwriting the cached copy — backs the frontend's "Regenerate" button; only valid for elapsed months | session                        |
-| `GET /api/trips`                                 | List of trips — id, name, date range, status, total spend so far (frontend Phase F)                                            | session                        |
-| `GET /api/trips/{id}`                            | Same shape as `/api/months`, minus `previousMonthTotal`/`deltaPercent`/analysis (none apply to a trip); 404 if unknown         | session                        |
-| `GET /api/health`                                | Liveness check for the hosting provider                                                                                        | none                           |
+| Method + path                                    | Purpose                                                                                                                                                                  | Auth                           |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------ |
+| `POST /telegram/webhook`                         | Receives Telegram updates                                                                                                                                                | Telegram `secret_token` header |
+| `GET /api/auth/google/login`                     | Redirects to Google's consent screen                                                                                                                                     | none (this _is_ the login)     |
+| `GET /api/auth/google/callback`                  | Verifies identity against the 2-email allowlist, issues session JWT                                                                                                      | none (verifies itself)         |
+| `GET /api/months/{yyyy-mm}`                      | Total, category breakdown, transaction list for one month                                                                                                                | session                        |
+| `GET /api/years/{yyyy}`                          | Total, per-month totals, category breakdown for a year                                                                                                                   | session                        |
+| `GET /api/ytd`                                   | Same shape as `/years`, bounded at today                                                                                                                                 | session                        |
+| `GET /api/categories`                            | Category list (for chart legends/filters)                                                                                                                                | session                        |
+| `GET /api/months/{yyyy-mm}/analysis`             | Cached Claude-written monthly analysis; generates + caches on first request (Phase 4C)                                                                                   | session                        |
+| `POST /api/months/{yyyy-mm}/analysis/regenerate` | Forces a fresh analysis, overwriting the cached copy — backs the frontend's "Regenerate" button; only valid for elapsed months                                           | session                        |
+| `GET /api/trips`                                 | List of trips — id, name, date range, status, budget, total spend so far (frontend Phase F/J)                                                                            | session                        |
+| `GET /api/trips/{id}`                            | Same shape as `/api/months` plus `plannedItems`, minus `previousMonthTotal`/`deltaPercent`/analysis; 404 if unknown                                                      | session                        |
+| `POST /api/trips/{id}/planned-items`             | Adds a manually-entered planned line item (frontend Phase K, `finance-frontend.md` §15) — the first real write the frontend originates itself, not relayed from Telegram | session                        |
+| `PATCH /api/trips/{id}/planned-items/{itemId}`   | Edits a planned item, or flips its `done` flag                                                                                                                           | session                        |
+| `DELETE /api/trips/{id}/planned-items/{itemId}`  | Removes a planned item                                                                                                                                                   | session                        |
+| `GET /api/health`                                | Liveness check for the hosting provider                                                                                                                                  | none                           |
 
 Trips were originally scoped as "future, not v1" (§3.7) but the frontend
-now implements against them (Phase F) — promoted here to match. The
-planning UI (`status: 'planned'`) is still a deliberate wait-and-see, not
-built yet (finance-frontend.md §6); the schema and these endpoints exist
-regardless since a `completed`/`active` trip needed them either way.
+now implements against them (Phase F onward) — promoted here to match.
+The planning UI (`status: 'planned'`) shipped read-only in Phase J
+(budget-vs-actual) and gained manual planned-item entry in Phase K
+(finance-frontend.md §6/§15) — no longer a wait-and-see, though the
+three `planned-items` endpoints above are still frontend-only until this
+backend is built.
 
 **Monthly analysis, briefly** (full frontend UX lives in the frontend
 repo, not duplicated here): generated **once per elapsed month**, cached

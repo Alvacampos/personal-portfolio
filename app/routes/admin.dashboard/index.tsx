@@ -42,9 +42,15 @@ export default function AdminHome() {
 
   return (
     <div className={getClasses()}>
-      {/* Bare year number, matching the yearly view's own <h1> — no
-       * "Current Year" label needed on top of it. */}
-      <h1 className={getClasses('title')}>{year}</h1>
+      {/* A real heading, not the bare year number the page used to lead
+       * with — landing here gave zero on-page confirmation you were on
+       * "Home" specifically, and it read as a near-duplicate of Year's
+       * own year-numbered heading. The year now sits underneath as a
+       * subtitle instead of standing in for the page's own name. */}
+      <h1 className={getClasses('title')}>
+        <FormattedMessage id="ADMIN_HOME_HEADING" />
+      </h1>
+      <p className={getClasses('subtitle')}>{year}</p>
       {months.length === 0 ? (
         <p className={getClasses('empty-state')} role="status">
           <FormattedMessage id="ADMIN_HOME_EMPTY" />

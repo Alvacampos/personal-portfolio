@@ -31,6 +31,36 @@
   margin: 0;
 }
 
+/* Same three-status treatment as the trips list card
+ * (admin.trips._index/style.css) — completed/planned/active read the
+ * same way wherever they show up. Compound selectors, not
+ * `.admin-trip-route__status-badge--completed` etc. — getClassMaker's
+ * object-modifier form attaches the modifier to the bare block, not the
+ * element (TECH-DEBT.md T19). */
+.admin-trip-route__status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-4) var(--space-12);
+  border-radius: var(--border-10);
+  font-size: var(--font-12);
+  font-weight: var(--weight-700);
+}
+
+.admin-trip-route__status-badge.admin-trip-route--completed {
+  background: var(--bg-elevated);
+  color: var(--fg-muted);
+}
+
+.admin-trip-route__status-badge.admin-trip-route--planned {
+  background: var(--accent-muted);
+  color: var(--accent-on-muted);
+}
+
+.admin-trip-route__status-badge.admin-trip-route--active {
+  background: var(--accent);
+  color: var(--fg-on-accent);
+}
+
 .admin-trip-route__date-range {
   color: var(--fg-muted);
   margin: 0;

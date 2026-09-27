@@ -15,6 +15,7 @@ import { getDateFnsLocale } from '~/utils/date-fns-locale';
 import { formatDateRange } from '~/utils/format-date-range';
 import { formatArs, formatUsd } from '~/utils/format-money';
 import { getCategoryLabel } from '~/utils/get-category-label';
+import { getTripStatusLabel } from '~/utils/get-trip-status-label';
 import { useCategoryIsolation } from '~/utils/use-category-isolation';
 import { getClassMaker } from '~/utils/utils';
 
@@ -103,6 +104,14 @@ export default function AdminTrip() {
 
       <header className={getClasses('header')}>
         <h1 className={getClasses('title')}>{trip.name}</h1>
+        {/* Previously only shown on the list card — landing directly on a
+         * trip's own page gave no cue whether it was upcoming or done,
+         * indistinguishable from a completed trip with nothing logged
+         * yet (more than cosmetic now that Phase K's planning UI makes
+         * "this hasn't happened yet" a meaningful thing to say). */}
+        <span className={getClasses('status-badge', { [trip.status]: true })}>
+          {getTripStatusLabel(trip.status, formatMessage)}
+        </span>
         <p className={getClasses('date-range')}>
           {formatDateRange(trip.startDate, trip.endDate, locale as Locale, ongoingLabel)}
         </p>

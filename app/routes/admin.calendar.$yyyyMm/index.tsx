@@ -1,7 +1,10 @@
 import { format, parse, parseISO } from 'date-fns';
+import type { Locale as DateFnsLocale } from 'date-fns/locale';
 import { useState } from 'react';
+import type { Modifiers } from 'react-day-picker';
 import { DayFlag, DayPicker, SelectionState, UI } from 'react-day-picker';
 import { es as dayPickerEs } from 'react-day-picker/locale';
+import type { IntlShape } from 'react-intl';
 import { FormattedMessage, useIntl } from 'react-intl';
 import type { LoaderFunctionArgs, MetaFunction } from 'react-router';
 import {
@@ -16,6 +19,7 @@ import Card from '~/components/Card';
 import type { Transaction } from '~/data/admin-schema';
 import type { Locale } from '~/intl';
 import { adminMeta } from '~/utils/admin-meta';
+import { getDateFnsLocale } from '~/utils/date-fns-locale';
 import { formatDayLabel } from '~/utils/format-day-label';
 import { formatArs } from '~/utils/format-money';
 import { formatMonthLabel } from '~/utils/format-month-label';
@@ -73,6 +77,35 @@ function groupByDay(transactions: Transaction[]): Map<string, Transaction[]> {
   return byDay;
 }
 
+const TIER_LABEL_IDS = {
+  tierHigh: 'ADMIN_CALENDAR_TIER_HIGH',
+  tierMid: 'ADMIN_CALENDAR_TIER_MID',
+  tierLow: 'ADMIN_CALENDAR_TIER_LOW',
+} as const;
+
+// The tier color alone was the only signal a day was expensive — no
+// legend explained the shades, and a screen reader got nothing from the
+// feature at all. Folding the tier into the day button's own accessible
+// name (in addition to the visible legend below the grid) fixes both.
+// Mirrors react-day-picker's own default `labelDayButton` (date +
+// today/selected suffixes) rather than reusing it — the library exports
+// it for reference but a custom `labels.labelDayButton` fully replaces
+// the default, so extending it means reimplementing it — then appends
+// the spend tier, the one new piece of information.
+function getDayButtonLabel(
+  date: Date,
+  modifiers: Modifiers,
+  dfLocale: DateFnsLocale | undefined,
+  formatMessage: IntlShape['formatMessage']
+): string {
+  let label = format(date, 'PPPP', { locale: dfLocale });
+  if (modifiers.today) label = `Today, ${label}`;
+  if (modifiers.selected) label = `${label}, selected`;
+  const tierKey = (['tierHigh', 'tierMid', 'tierLow'] as const).find((key) => modifiers[key]);
+  if (tierKey) label += ` — ${formatMessage({ id: TIER_LABEL_IDS[tierKey] })}`;
+  return label;
+}
+
 export default function AdminCalendar() {
   const { month } = useLoaderData<typeof loader>();
   const { formatMessage, locale } = useIntl();
@@ -83,8 +116,18 @@ export default function AdminCalendar() {
   const tiers = getCalendarDayTiers(month.transactions);
   const transactionsByDay = groupByDay(month.transactions);
   const selectedTransactions = selectedDay ? (transactionsByDay.get(selectedDay) ?? []) : [];
+  const dfLocale = getDateFnsLocale(locale as Locale);
+  const hasTieredDays = tiers.low.length + tiers.mid.length + tiers.high.length > 0;
 
   function handleMonthChange(newMonth: Date) {
+    // Prev/next (or keyboard paging) browse to a different month — clear
+    // the selection rather than leaving the panel showing a stale date
+    // from the month just left, re-looked-up against the new month's
+    // transactions (wrong day, and often a false "nothing logged" for a
+    // day that actually has data in its own month). The date-jump input
+    // is a separate path (handleDatePick, below) and intentionally keeps
+    // its own target day selected across the jump.
+    setSelectedDay(null);
     navigate(`/admin/calendar/${format(newMonth, 'yyyy-MM')}`);
   }
 
@@ -135,6 +178,10 @@ export default function AdminCalendar() {
         onSelect={handleSelect}
         weekStartsOn={1}
         locale={locale === 'es' ? dayPickerEs : undefined}
+        labels={{
+          labelDayButton: (date, modifiers) =>
+            getDayButtonLabel(date, modifiers, dfLocale, formatMessage),
+        }}
         modifiers={{ tierLow: tiers.low, tierMid: tiers.mid, tierHigh: tiers.high }}
         modifiersClassNames={{
           tierLow: getClasses('day', 'tier-low'),
@@ -162,6 +209,23 @@ export default function AdminCalendar() {
           [SelectionState.selected]: getClasses('day', 'selected'),
         }}
       />
+
+      {hasTieredDays && (
+        <ul className={getClasses('legend')}>
+          <li className={getClasses('legend-item')}>
+            <span className={getClasses('legend-swatch', 'low')} aria-hidden="true" />
+            <FormattedMessage id="ADMIN_CALENDAR_TIER_LOW" />
+          </li>
+          <li className={getClasses('legend-item')}>
+            <span className={getClasses('legend-swatch', 'mid')} aria-hidden="true" />
+            <FormattedMessage id="ADMIN_CALENDAR_TIER_MID" />
+          </li>
+          <li className={getClasses('legend-item')}>
+            <span className={getClasses('legend-swatch', 'high')} aria-hidden="true" />
+            <FormattedMessage id="ADMIN_CALENDAR_TIER_HIGH" />
+          </li>
+        </ul>
+      )}
 
       {selectedDay && (
         <section className={getClasses('day-detail')} aria-labelledby="calendar-day-detail-heading">
