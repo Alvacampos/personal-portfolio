@@ -77,8 +77,11 @@
  * the accent color. "Up" intentionally has no special color of its own
  * (the ▲ glyph + number already say "increased"); this repo's palette
  * has no warning/danger token to reach for instead, and green would send
- * exactly the wrong signal for a spending increase. */
-.admin-month-route__delta--down {
+ * exactly the wrong signal for a spending increase. Compound selector,
+ * not `.admin-month-route__delta--down` — getClassMaker's object-modifier
+ * form attaches the modifier to the bare block, not the element
+ * (TECH-DEBT.md T19). */
+.admin-month-route__delta.admin-month-route--down {
   color: var(--accent);
 }
 
@@ -134,7 +137,8 @@
   cursor: pointer;
 }
 
-.admin-month-route__category-row--active {
+/* Compound selector — see the T19 note above the __delta rule. */
+.admin-month-route__category-row.admin-month-route--active {
   border-color: var(--accent);
   background: var(--bg-elevated);
 }

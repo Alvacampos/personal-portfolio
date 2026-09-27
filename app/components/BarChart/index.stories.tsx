@@ -12,6 +12,7 @@ type Story = StoryObj<typeof BarChart>;
 
 export const Default: Story = {
   args: {
+    locale: 'en',
     data: [
       { month: '2025-01', value: 700000 },
       { month: '2025-02', value: 720000 },
@@ -31,6 +32,7 @@ export const Default: Story = {
 
 export const PartialYear: Story = {
   args: {
+    locale: 'en',
     data: [
       { month: '2026-01', value: 780000 },
       { month: '2026-02', value: 800000 },

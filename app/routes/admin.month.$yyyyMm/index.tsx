@@ -1,5 +1,6 @@
 import { addMonths, format, parse, parseISO } from 'date-fns';
 import { useState } from 'react';
+import { FormattedMessage, useIntl } from 'react-intl';
 import type { LoaderFunctionArgs, MetaFunction } from 'react-router';
 import { isRouteErrorResponse, Link, useLoaderData, useRouteError } from 'react-router';
 
@@ -7,7 +8,9 @@ import Card from '~/components/Card';
 import PieChart from '~/components/PieChart';
 import { FIXTURE_ANALYSIS_READY, FIXTURE_MONTH, FIXTURE_MONTH_EMPTY } from '~/data/admin-fixtures';
 import type { MonthlyAnalysisResponse, MonthResponse } from '~/data/admin-schema';
+import type { Locale } from '~/intl';
 import { getCategoryColor } from '~/utils/category-colors';
+import { getDateFnsLocale } from '~/utils/date-fns-locale';
 import { formatArs, formatUsd } from '~/utils/format-money';
 import { useCategoryIsolation } from '~/utils/use-category-isolation';
 import { getClassMaker } from '~/utils/utils';
@@ -51,8 +54,13 @@ function toYearMonth(monthDate: Date): string {
   return format(monthDate, 'yyyy-MM');
 }
 
-function formatMonthLabel(yyyyMm: string): string {
-  return format(parseYearMonth(yyyyMm), 'MMMM yyyy');
+// Locale is a plain param, not read from context — this runs both from
+// the component (real admin locale) and from `meta` (no intl context
+// available there, same as the public site never localizing <title>).
+function formatMonthLabel(yyyyMm: string, locale?: Locale): string {
+  return format(parseYearMonth(yyyyMm), 'MMMM yyyy', {
+    locale: locale ? getDateFnsLocale(locale) : undefined,
+  });
 }
 
 export async function loader({ params }: LoaderFunctionArgs) {
@@ -79,10 +87,14 @@ export function ErrorBoundary() {
   return (
     <div className={getClasses('error')}>
       <p className={getClasses('error-code')}>{status}</p>
-      <h1 className={getClasses('error-title')}>That month doesn&apos;t look right</h1>
-      <p className={getClasses('error-body')}>Expected a URL like /admin/month/2026-08.</p>
+      <h1 className={getClasses('error-title')}>
+        <FormattedMessage id="ADMIN_MONTH_ERROR_TITLE" />
+      </h1>
+      <p className={getClasses('error-body')}>
+        <FormattedMessage id="ADMIN_MONTH_ERROR_BODY" />
+      </p>
       <Link to="/admin/dashboard" className={getClasses('error-action')}>
-        <span aria-hidden="true">←</span> Back to current month
+        <span aria-hidden="true">←</span> <FormattedMessage id="ADMIN_BACK_TO_CURRENT_MONTH" />
       </Link>
     </div>
   );
@@ -90,6 +102,7 @@ export function ErrorBoundary() {
 
 export default function AdminMonth() {
   const { month, analysis, prevMonth, nextMonth } = useLoaderData<typeof loader>();
+  const { formatMessage, locale } = useIntl();
   const [showUsd, setShowUsd] = useState(false);
   const hasData = month.categories.length > 0;
 
@@ -101,6 +114,7 @@ export default function AdminMonth() {
   const visibleTransactions = activeCategoryId
     ? month.transactions.filter((tx) => tx.categoryId === activeCategoryId)
     : month.transactions;
+  const dfLocale = getDateFnsLocale(locale as Locale);
 
   return (
     <div className={getClasses()}>
@@ -108,15 +122,23 @@ export default function AdminMonth() {
         <div className={getClasses('month-nav')}>
           <Link
             to={`/admin/month/${prevMonth}`}
-            aria-label={`Previous month, ${formatMonthLabel(prevMonth)}`}
+            aria-label={formatMessage(
+              { id: 'ADMIN_PREV_MONTH' },
+              { month: formatMonthLabel(prevMonth, locale as Locale) }
+            )}
             className={getClasses('month-nav-arrow')}
           >
             <span aria-hidden="true">‹</span>
           </Link>
-          <h1 className={getClasses('month-title')}>{formatMonthLabel(month.month)}</h1>
+          <h1 className={getClasses('month-title')}>
+            {formatMonthLabel(month.month, locale as Locale)}
+          </h1>
           <Link
             to={`/admin/month/${nextMonth}`}
-            aria-label={`Next month, ${formatMonthLabel(nextMonth)}`}
+            aria-label={formatMessage(
+              { id: 'ADMIN_NEXT_MONTH' },
+              { month: formatMonthLabel(nextMonth, locale as Locale) }
+            )}
             className={getClasses('month-nav-arrow')}
           >
             <span aria-hidden="true">›</span>
@@ -130,7 +152,7 @@ export default function AdminMonth() {
         >
           {showUsd ? formatUsd(displayedTotal.usd) : formatArs(displayedTotal.ars)}
           <span className={getClasses('total-hint')}>
-            {showUsd ? 'tap for ARS' : 'tap for USD'}
+            <FormattedMessage id={showUsd ? 'ADMIN_TAP_FOR_ARS' : 'ADMIN_TAP_FOR_USD'} />
           </span>
         </button>
         {activeCategory ? (
@@ -140,9 +162,12 @@ export default function AdminMonth() {
           // covers "grey out sections for a cleaner analysis" (brief
           // point 5) without inventing data that doesn't exist.
           <p className={getClasses('active-category')}>
-            Showing {activeCategory.categoryName} only —{' '}
+            <FormattedMessage
+              id="ADMIN_SHOWING_CATEGORY_ONLY"
+              values={{ category: activeCategory.categoryName }}
+            />{' '}
             <button type="button" className={getClasses('clear-filter')} onClick={clearCategory}>
-              show all
+              <FormattedMessage id="ADMIN_SHOW_ALL" />
             </button>
           </p>
         ) : (
@@ -156,7 +181,10 @@ export default function AdminMonth() {
               <span aria-hidden="true">
                 {month.deltaPercent > 0 ? '▲' : month.deltaPercent < 0 ? '▼' : '–'}
               </span>{' '}
-              {Math.abs(month.deltaPercent)}% vs last month
+              <FormattedMessage
+                id="ADMIN_MONTH_VS_LAST_MONTH"
+                values={{ percent: Math.abs(month.deltaPercent) }}
+              />
             </p>
           )
         )}
@@ -164,7 +192,7 @@ export default function AdminMonth() {
 
       {!hasData ? (
         <p className={getClasses('empty-state')} role="status">
-          Nothing logged for this month yet.
+          <FormattedMessage id="ADMIN_MONTH_EMPTY" />
         </p>
       ) : (
         <>
@@ -180,7 +208,7 @@ export default function AdminMonth() {
 
           <section className={getClasses('categories')} aria-labelledby="categories-heading">
             <h2 id="categories-heading" className={getClasses('section-title')}>
-              Categories
+              <FormattedMessage id="ADMIN_CATEGORIES_HEADING" />
             </h2>
             {/* The primary, always-reliable way to isolate a category —
              * the pie chart above is a visual complement to this, not the
@@ -217,7 +245,14 @@ export default function AdminMonth() {
 
           <section className={getClasses('transactions')} aria-labelledby="transactions-heading">
             <h2 id="transactions-heading" className={getClasses('section-title')}>
-              {activeCategory ? `Transactions — ${activeCategory.categoryName}` : 'Transactions'}
+              {activeCategory ? (
+                <FormattedMessage
+                  id="ADMIN_TRANSACTIONS_HEADING_FILTERED"
+                  values={{ category: activeCategory.categoryName }}
+                />
+              ) : (
+                <FormattedMessage id="ADMIN_TRANSACTIONS_HEADING" />
+              )}
             </h2>
             {/* A category only ever appears in the list if it has at
              * least one transaction, so this can't happen against
@@ -226,14 +261,15 @@ export default function AdminMonth() {
              * with that assumption. */}
             {visibleTransactions.length === 0 ? (
               <p className={getClasses('empty-state')} role="status">
-                No transactions in this category.
+                <FormattedMessage id="ADMIN_NO_TRANSACTIONS_IN_CATEGORY" />
               </p>
             ) : (
               <div className={getClasses('transaction-list')}>
                 {visibleTransactions.map((tx) => (
                   <Card key={tx.id} title={tx.description}>
                     <p className={getClasses('transaction-meta')}>
-                      {tx.categoryName} · {format(parseISO(tx.occurredOn), 'MMM d')} · {tx.paidBy}
+                      {tx.categoryName} ·{' '}
+                      {format(parseISO(tx.occurredOn), 'MMM d', { locale: dfLocale })} · {tx.paidBy}
                     </p>
                     <p className={getClasses('transaction-amount')}>{formatArs(tx.amount.ars)}</p>
                   </Card>
@@ -246,17 +282,26 @@ export default function AdminMonth() {
 
       <section className={getClasses('analysis')} aria-labelledby="analysis-heading">
         <h2 id="analysis-heading" className={getClasses('section-title')}>
-          Claude&apos;s analysis
+          <FormattedMessage id="ADMIN_ANALYSIS_HEADING" />
         </h2>
         {analysis.status === 'ready' ? (
           <>
             <p className={getClasses('analysis-text')}>{analysis.analysis}</p>
             <p className={getClasses('analysis-meta')}>
-              Generated {format(parseISO(analysis.generatedAt), 'MMM d, yyyy')}
+              <FormattedMessage
+                id="ADMIN_ANALYSIS_GENERATED"
+                values={{
+                  date: format(parseISO(analysis.generatedAt), 'MMM d, yyyy', {
+                    locale: dfLocale,
+                  }),
+                }}
+              />
             </p>
           </>
         ) : (
-          <p className={getClasses('analysis-empty')}>Available once this month ends.</p>
+          <p className={getClasses('analysis-empty')}>
+            <FormattedMessage id="ADMIN_ANALYSIS_NOT_AVAILABLE" />
+          </p>
         )}
       </section>
     </div>

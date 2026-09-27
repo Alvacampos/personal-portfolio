@@ -26,44 +26,63 @@ good practice") doesn't hold either: the frontend was explicitly scoped as
 work Claude does, not one of the stated Python/SQL/Claude-API learning
 goals this whole project exists for. See §7 for what Recharts buys.
 
-**Two places where copying convention literally would be wrong, not
-right**, caught by looking at what each convention is actually _for_:
+**Reversed after Phases A–F shipped: `/admin` gets the full portfolio
+chrome, not a stripped-down one.** Two decisions below were made early,
+before there was a real screen to look at — once Phase F's actual pages
+existed side by side with the public site, it was clear both had
+under-shot what "keep the core style" should have meant:
 
-- **Skip `react-intl` for `/admin`.** The public site is bilingual because
-  it has two real visitor audiences. `/admin` has an audience of exactly
-  two people who both speak Spanish — internationalizing a private tool
-  nobody else will ever see is translation-maintenance overhead with no
-  one to serve. Write the copy once, in whichever language you two
-  actually think in Spanish/English for money (probably Spanish).
-- **Don't reuse the public `NavBar`.** A "GitHub" icon and a "Contact" link
-  have no place inside a private finance dashboard. `/admin/*` gets its own
-  small nav (Month / Year / Vacations + a sign-out control), sharing the
-  same design tokens and theme system, but not the same nav content. This
-  likely wants its own layout route wrapping the admin pages (exact
-  `@react-router/fs-routes` file-naming for a shared layout should be
-  confirmed against the installed version at implementation time — the
-  existing routes in this repo don't currently use a layout route, so this
-  is a new pattern for this codebase, not precedent already in place).
+- **`react-intl` is back in scope.** The original reasoning ("an audience
+  of exactly two people who both speak Spanish, translating for no one")
+  wasn't wrong about the audience — it undervalued match-the-portfolio
+  consistency as its own goal, and this project's explicit ask
+  ("this app needs to support spanish, very similar to the portfolio app")
+  overrides it directly. Every route shipped in Phases A–F has hardcoded
+  English copy that needs retrofitting to message keys — 10 route/component
+  files, comparable in size to the public site's existing 99-key
+  `en-US.json`/`es-ES.json`. This is real, scoped work, not a footnote —
+  see Phase G in §12.
+- **`/admin` gets its own nav component, but shaped like `NavBar`, not a
+  flat top bar.** The original plan's "own small nav" (right call — a
+  GitHub icon has no place here) got built as a single top-of-page bar
+  with inline links (Phase A). That underused "sharing the same design
+  tokens and theme system" — the public site's actual defining visual
+  trait is the **fixed side rail on desktop / bottom tab bar on mobile**
+  layout (`app/components/NavBar/`, driven by the `$bp-*` breakpoint
+  tokens), not just its color palette. `/admin` reuses that exact
+  responsive layout pattern and the same breakpoint tokens, with its own
+  content (Home / Year / Trips / Calendar + theme and locale toggles +
+  sign-out) — a new `AdminNavBar` component, not `NavBar` itself (still
+  no GitHub/Contact/CV items; the two navs share a layout skeleton, not a
+  component). See Phase G in §12.
 
-Keep: dark/light theming (free via existing CSS custom properties, and
-genuinely useful for checking finances at night), `Card`, the skeleton
-pattern, route-local `ErrorBoundary`s, BEM everywhere.
+Keep, unchanged: dark/light theming (free via existing CSS custom
+properties, and genuinely useful for checking finances at night), `Card`,
+the skeleton pattern, route-local `ErrorBoundary`s, BEM everywhere, the
+own-layout-route pattern already established in `app/routes/admin/index.tsx`.
 
 ---
 
 ## 2. Sections / routes
 
-| Route                  | Purpose                              |
-| ---------------------- | ------------------------------------ |
-| `/admin`               | Login — "Sign in with Google" button |
-| `/admin/dashboard`     | Redirects to the current month       |
-| `/admin/month/:yyyyMm` | Month view (§4) — the core screen    |
-| `/admin/year/:year`    | Yearly review (§5)                   |
-| `/admin/trips`         | Vacation list                        |
-| `/admin/trips/:tripId` | A single trip's spend (§6)           |
+| Route                     | Purpose                                                    |
+| ------------------------- | ---------------------------------------------------------- |
+| `/admin`                  | Login — "Sign in with Google" button                       |
+| `/admin/dashboard`        | **Home** (§13) — this year's months as cards, tap into one |
+| `/admin/month/:yyyyMm`    | Month view (§4) — the core screen                          |
+| `/admin/year`             | Redirects to the current year                              |
+| `/admin/year/:year`       | Yearly review (§5)                                         |
+| `/admin/calendar`         | Redirects to the current month's calendar                  |
+| `/admin/calendar/:yyyyMm` | Calendar view (§14) — one month, day-by-day                |
+| `/admin/trips`            | Vacation list                                              |
+| `/admin/trips/:tripId`    | A single trip's spend (§6)                                 |
 
 Matches the flat-route convention already in `app/routes/` (per the backend
-doc's §6.1, refined here with the trips routes added).
+doc's §6.1, refined here with the trips/calendar routes added).
+`/admin/dashboard` changed meaning from Phase A's plan (redirect-to-
+current-month) to an actual landing page once Home (§13) was added —
+the nav's "Home" entry still points at the same URL, so nothing that
+already links there needs to change, only what that URL renders.
 
 ---
 
@@ -165,17 +184,18 @@ possibly planning ahead — not just after-the-fact tracking.
   list pattern as the month view (deliberately consistent, not a new
   layout to learn), scoped to that trip's tagged expenses instead of a
   calendar month.
-- **Decided: schema now, planning UI later, wait-and-see rather than
-  scheduled.** "Maybe even plan them" is real scope — a trip existing
-  _before_ any spending happens, with a planned budget and later a
-  comparison of actual vs. planned — but it's genuinely unknown yet
-  whether that's wanted in practice or just sounds useful in the abstract.
-  The backend's `trips` table (finance-tracker.md §4.7) gets a `status`
-  (`planned` | `active` | `completed`) and a nullable `budget` column now
-  regardless, since that's cheap (same "schema now, feature later" pattern
-  already used for currency and trips themselves). The planning **UI**
-  waits until a couple of trips have been tracked retrospectively first —
-  build it once you know you want it, not on the assumption you will.
+- **Decided: read-only planned-vs-actual, not a write UI (Phase J).**
+  "Plan/add vacation expenses" is answered by showing the trip's own
+  `budget` column (already in the schema) alongside its actual total —
+  the real expense entries still only ever arrive via Telegram, same as
+  every other number in this app. This keeps the write-boundary principle
+  intact (finance-tracker.md §6.6: "the real write-boundary is who's in
+  the Telegram group") rather than opening a second, much bigger
+  exception than the already-approved "Regenerate analysis" button (which
+  only recomputes a derived summary and can't create or alter a financial
+  record the way a real write UI here would have). A `planned` trip with
+  no actual spend yet shows its budget with a "$0 spent so far" actual —
+  same empty-state discipline as everywhere else, not a special case.
 - No Claude analysis on the trip view for v1 (that's specifically a
   _monthly_ feature per the brief) — worth reconsidering once monthly
   analysis is proven out, not before.
@@ -307,12 +327,14 @@ bar, not a lower private-app-nobody-else-sees one:
 
 ## 11. Open questions
 
-All four forks raised by this review are resolved — see
+All forks raised across both review passes are resolved — see
 [finance-tracker-ledger.md](finance-tracker-ledger.md) for the dated log
-entry, and the sections below for the reasoning behind each: charts use
+entries, and the sections below for the reasoning behind each: charts use
 Recharts (§1, §7), the monthly analysis gets a frontend "Regenerate"
 button (§9), the yearly last-year comparison is a fast-follow not v1 (§5),
-and trip planning is schema-now / UI-wait-and-see (§6). No open forks
+trip planning is schema-now / UI-wait-and-see (§6), and — reopened after
+Phases A–F shipped, then resolved — vacation planning is a read-only
+planned-vs-actual view, not a write UI (§6, Phase J in §12). No open forks
 remain in this doc; new ones that come up during implementation get added
 here rather than decided silently.
 
@@ -346,3 +368,95 @@ backend doc's §7 endpoint list, are that contract).
 - **Phase F — Vacations.** List + detail view, reusing the month/trip
   pattern; planning UI only if §11's open question resolves toward
   building it now rather than later.
+
+Added after Phases A–F shipped and were compared side by side against the
+public site (§1's reversals):
+
+- **Phase G — Portfolio-parity chrome.** The two reversals from §1, done
+  together since they touch the same files: build `AdminNavBar` (side
+  rail desktop / bottom tabs mobile, `$bp-*` tokens, theme + locale
+  toggle, sign-out) to replace Phase A's flat top bar, and retrofit every
+  existing route/component's hardcoded copy to `react-intl` message keys
+  (new `app/intl/admin-en-US.json` / `admin-es-ES.json` — kept separate
+  from the public site's `en-US.json`/`es-ES.json` rather than merged in,
+  so an admin-only key never accidentally ships in the public bundle's
+  message file). Blocks every phase below — they'd otherwise all need
+  their own nav update.
+- **Phase H — Home.** Repurposes `/admin/dashboard` from "redirect to
+  current month" into an actual page (§13).
+- **Phase I — Calendar.** New section (§14), built entirely from data the
+  month endpoint already returns — no new backend surface needed.
+- **Phase J — Vacation planning UI.** Read-only planned-vs-actual (§6) —
+  the trip detail view shows `budget` alongside the actual total when a
+  trip has one set. No write endpoints, no forms; the frontend stays
+  read-only apart from the existing regenerate-analysis exception.
+
+---
+
+## 13. Home (`/admin/dashboard`)
+
+New section, added after using the shipped Phases A–F and noticing there
+was no actual landing page — logging in dropped you straight into
+whatever month happened to be current, with no sense of the data as a
+browsable whole.
+
+- **This year's months, as cards, newest first** — reusing the exact data
+  `GET /api/years/{yyyy}`'s `monthlyTotals` already returns (§5), just
+  rendered as a tappable `Card` grid instead of bar-chart bars. No new
+  backend endpoint: Home for the current year _is_ that year's
+  `monthlyTotals`, read the same way the yearly view already does.
+  Deliberately not "all months across all years" for v1 — that's a
+  pagination/infinite-scroll problem worth solving once it's clear it's
+  wanted, not assumed up front (same "prove it out first" reasoning
+  already used for the yearly-comparison and trip-planning forks).
+- Each card: month name, total (ARS, matching the rest of the app's
+  ARS-primary convention), and a lightweight sparkline-free number only —
+  no per-card chart. `Card`'s existing `texts` prop covers this without a
+  new component.
+- Tapping a card navigates to `/admin/month/:yyyyMm` — Home is a menu, not
+  a second place that duplicates the month view's own content.
+- **Empty state**: a brand-new install with zero months of data yet needs
+  its own message ("Nothing logged yet — send an expense in the Telegram
+  group to get started" or similar), distinct from a single empty month
+  (which already has its own copy on the month view itself).
+- Nav: this is what the admin nav's first item ("Home") links to — see
+  Phase G (§12). The month-view-specific prev/next month arrows stay on
+  the month view itself; Home doesn't need them, it already shows every
+  month in the year at once.
+
+---
+
+## 14. Calendar (`/admin/calendar/:yyyyMm`)
+
+New section. Fully derivable from data the month endpoint already
+returns — every `Transaction` already carries `occurredOn` as an exact
+`YYYY-MM-DD` (`docs/finance-tracker-backend-kickoff.md` §6.1) — so this
+is a new _view_ of existing data, not a new API surface.
+
+- **One month at a time**, same URL-is-the-source-of-truth prev/next
+  pattern as the month view (`/admin/calendar/2026-08`, `‹`/`›` arrows) —
+  consistent with the rest of the app rather than a new navigation idiom.
+- **A calendar grid**, one cell per day of the month. A day with at least
+  one transaction gets a visible marker (a dot, or the day's ARS total in
+  small text if it fits) — days with nothing stay visually quiet, same
+  "blank slate, not a broken-looking chart" principle already applied to
+  the month view's empty state (§4).
+- **Tapping a day** shows that day's transactions — inline, expanding
+  below the grid (not a route change to a per-day URL). A calendar is
+  inherently a browsing tool where you might tap several different days
+  in a row; a full navigation per tap would be slower and would litter
+  browser history with single-day views nobody will ever deep-link to.
+  Tapping the same day again collapses it — same toggle idiom already
+  used for category isolation (§4/§8), not a new interaction to learn.
+- **Accessibility, the same discipline as the pie/bar charts (§10)**: a
+  calendar grid is itself a visual layout, not just a decorative chart, so
+  it can't simply be `aria-hidden` with a hidden list bolted on the side
+  the way the bar chart's month-by-month data is — the grid _is_ the
+  content here. Build it as a real `<table>` with a `<caption>` (the
+  month/year) and `<th scope="col">` weekday headers, so a screen reader
+  gets a normal, navigable data table instead of a div soup; the expanded
+  day's transaction list is a real, focusable region (not aria-hidden)
+  right below the grid.
+- No isolate-a-category interaction here — a calendar's organizing axis is
+  the day, not the category; category breakdown stays the month/year/trip
+  views' job.

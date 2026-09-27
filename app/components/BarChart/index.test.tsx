@@ -14,7 +14,7 @@ describe('BarChart', () => {
   // PieChart's tests), so actual bar rendering is only verified by the
   // e2e suite (a real browser). This confirms the accessibility contract.
   it('hides the whole chart from assistive tech', () => {
-    const { container } = render(<BarChart data={DATA} />);
+    const { container } = render(<BarChart data={DATA} locale="en" />);
     expect(container.querySelector('[aria-hidden="true"]')).not.toBeNull();
   });
 });

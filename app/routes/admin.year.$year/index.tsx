@@ -1,5 +1,6 @@
 import { format, parse } from 'date-fns';
 import { useState } from 'react';
+import { FormattedMessage, useIntl } from 'react-intl';
 import type { LoaderFunctionArgs, MetaFunction } from 'react-router';
 import { isRouteErrorResponse, Link, useLoaderData, useRouteError } from 'react-router';
 
@@ -7,7 +8,9 @@ import BarChart from '~/components/BarChart';
 import PieChart from '~/components/PieChart';
 import { FIXTURE_YEAR, FIXTURE_YTD } from '~/data/admin-fixtures';
 import type { YearResponse } from '~/data/admin-schema';
+import type { Locale } from '~/intl';
 import { getCategoryColor } from '~/utils/category-colors';
+import { getDateFnsLocale } from '~/utils/date-fns-locale';
 import { formatArs, formatUsd } from '~/utils/format-money';
 import { useCategoryIsolation } from '~/utils/use-category-isolation';
 import { getClassMaker } from '~/utils/utils';
@@ -28,8 +31,10 @@ const YEAR_RE = /^\d{4}$/;
 // §6 says `/api/ytd` is "same shape as /years, bounded at today"), and
 // every other year demonstrates the empty state. Phase C replaces this
 // with a real fetch to GET /api/years/{yyyy} or GET /api/ytd.
-function formatMonthLabel(yyyyMm: string): string {
-  return format(parse(yyyyMm, 'yyyy-MM', new Date()), 'MMMM yyyy');
+function formatMonthLabel(yyyyMm: string, locale?: Locale): string {
+  return format(parse(yyyyMm, 'yyyy-MM', new Date()), 'MMMM yyyy', {
+    locale: locale ? getDateFnsLocale(locale) : undefined,
+  });
 }
 
 function getYearFixture(year: number): YearResponse {
@@ -61,10 +66,14 @@ export function ErrorBoundary() {
   return (
     <div className={getClasses('error')}>
       <p className={getClasses('error-code')}>{status}</p>
-      <h1 className={getClasses('error-title')}>That year doesn&apos;t look right</h1>
-      <p className={getClasses('error-body')}>Expected a URL like /admin/year/2026.</p>
+      <h1 className={getClasses('error-title')}>
+        <FormattedMessage id="ADMIN_YEAR_ERROR_TITLE" />
+      </h1>
+      <p className={getClasses('error-body')}>
+        <FormattedMessage id="ADMIN_YEAR_ERROR_BODY" />
+      </p>
       <Link to="/admin/year" className={getClasses('error-action')}>
-        <span aria-hidden="true">←</span> Back to current year
+        <span aria-hidden="true">←</span> <FormattedMessage id="ADMIN_BACK_TO_CURRENT_YEAR" />
       </Link>
     </div>
   );
@@ -72,6 +81,7 @@ export function ErrorBoundary() {
 
 export default function AdminYear() {
   const { year, prevYear, nextYear } = useLoaderData<typeof loader>();
+  const { formatMessage, locale } = useIntl();
   const [showUsd, setShowUsd] = useState(false);
   const hasData = year.categories.length > 0;
 
@@ -87,7 +97,7 @@ export default function AdminYear() {
         <div className={getClasses('year-nav')}>
           <Link
             to={`/admin/year/${prevYear}`}
-            aria-label={`Previous year, ${prevYear}`}
+            aria-label={formatMessage({ id: 'ADMIN_PREV_YEAR' }, { year: prevYear })}
             className={getClasses('year-nav-arrow')}
           >
             <span aria-hidden="true">‹</span>
@@ -95,7 +105,7 @@ export default function AdminYear() {
           <h1 className={getClasses('year-title')}>{year.year}</h1>
           <Link
             to={`/admin/year/${nextYear}`}
-            aria-label={`Next year, ${nextYear}`}
+            aria-label={formatMessage({ id: 'ADMIN_NEXT_YEAR' }, { year: nextYear })}
             className={getClasses('year-nav-arrow')}
           >
             <span aria-hidden="true">›</span>
@@ -109,14 +119,17 @@ export default function AdminYear() {
         >
           {showUsd ? formatUsd(displayedTotal.usd) : formatArs(displayedTotal.ars)}
           <span className={getClasses('total-hint')}>
-            {showUsd ? 'tap for ARS' : 'tap for USD'}
+            <FormattedMessage id={showUsd ? 'ADMIN_TAP_FOR_ARS' : 'ADMIN_TAP_FOR_USD'} />
           </span>
         </button>
         {activeCategory && (
           <p className={getClasses('active-category')}>
-            Showing {activeCategory.categoryName} only —{' '}
+            <FormattedMessage
+              id="ADMIN_SHOWING_CATEGORY_ONLY"
+              values={{ category: activeCategory.categoryName }}
+            />{' '}
             <button type="button" className={getClasses('clear-filter')} onClick={clearCategory}>
-              show all
+              <FormattedMessage id="ADMIN_SHOW_ALL" />
             </button>
           </p>
         )}
@@ -124,19 +137,20 @@ export default function AdminYear() {
 
       {!hasData ? (
         <p className={getClasses('empty-state')} role="status">
-          Nothing logged for this year yet.
+          <FormattedMessage id="ADMIN_YEAR_EMPTY" />
         </p>
       ) : (
         <>
           <section className={getClasses('monthly')} aria-labelledby="monthly-heading">
             <h2 id="monthly-heading" className={getClasses('section-title')}>
-              Month by month
+              <FormattedMessage id="ADMIN_MONTHLY_HEADING" />
             </h2>
             <BarChart
               data={year.monthlyTotals.map((entry) => ({
                 month: entry.month,
                 value: entry.total.ars,
               }))}
+              locale={locale as Locale}
             />
             {/* Accessible equivalent of the chart above — visually hidden,
              * real content for screen readers. Unlike the pie chart, the
@@ -146,7 +160,7 @@ export default function AdminYear() {
             <ul className={getClasses('monthly-table')}>
               {year.monthlyTotals.map((entry) => (
                 <li key={entry.month}>
-                  {formatMonthLabel(entry.month)}: {formatArs(entry.total.ars)}
+                  {formatMonthLabel(entry.month, locale as Locale)}: {formatArs(entry.total.ars)}
                 </li>
               ))}
             </ul>
@@ -164,7 +178,7 @@ export default function AdminYear() {
 
           <section className={getClasses('categories')} aria-labelledby="categories-heading">
             <h2 id="categories-heading" className={getClasses('section-title')}>
-              Categories
+              <FormattedMessage id="ADMIN_CATEGORIES_HEADING" />
             </h2>
             <ul className={getClasses('category-list')}>
               {year.categories.map((category, index) => {

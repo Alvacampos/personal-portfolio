@@ -1,6 +1,10 @@
-import { Link, Outlet, useLocation } from 'react-router';
+import { IntlProvider } from 'react-intl';
+import type { LoaderFunctionArgs } from 'react-router';
+import { Outlet, useLoaderData, useLocation } from 'react-router';
 
-import ThemeToggle from '~/components/ThemeToggle';
+import AdminNavBar from '~/components/AdminNavBar';
+import { adminMessagesFor } from '~/intl/admin';
+import { pickLocale } from '~/intl/index';
 import { getClassMaker } from '~/utils/utils';
 
 import styles from './style.css?url';
@@ -10,48 +14,31 @@ export const links = () => [{ rel: 'stylesheet', href: styles }];
 const BLOCK = 'admin-layout';
 const getClasses = getClassMaker(BLOCK);
 
-const NAV_LINKS = [
-  { to: '/admin/dashboard', label: 'Month', prefix: '/admin/month' },
-  { to: '/admin/year', label: 'Year', prefix: '/admin/year' },
-  { to: '/admin/trips', label: 'Trips', prefix: '/admin/trips' },
-] as const;
+// /admin gets its own IntlProvider, nested inside root.tsx's public one —
+// nested providers fully replace the message dictionary for their
+// subtree (verified against react-intl's source, not assumed), so this
+// cleanly scopes /admin to its own message set with zero leakage either
+// direction, and adminMessagesFor's import never reaches the public
+// "root" chunk (docs/finance-frontend.md §1's Phase G reversal).
+export async function loader({ request }: LoaderFunctionArgs) {
+  return { locale: pickLocale(request) };
+}
 
 export default function AdminLayout() {
+  const { locale } = useLoaderData<typeof loader>();
   const { pathname } = useLocation();
   // The login screen (exactly `/admin`) has nothing to navigate to yet —
   // no session, no sign-out — so it renders without the chrome below.
   const isLoginPage = pathname === '/admin';
 
   return (
-    <div className={getClasses()}>
-      {!isLoginPage && (
-        <nav className={getClasses('nav')} aria-label="Admin">
-          <ul className={getClasses('nav-links')}>
-            {NAV_LINKS.map(({ to, label, prefix }) => (
-              <li key={to}>
-                <Link
-                  to={to}
-                  className={getClasses('nav-link', { active: pathname.startsWith(prefix) })}
-                  aria-current={pathname.startsWith(prefix) ? 'page' : undefined}
-                >
-                  {label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-          <div className={getClasses('nav-utility')}>
-            <ThemeToggle />
-            {/* No real session yet (Phase C) — this just returns to the
-             * login screen rather than actually invalidating anything. */}
-            <Link to="/admin" className={getClasses('sign-out')}>
-              Sign out
-            </Link>
-          </div>
-        </nav>
-      )}
-      <div className={getClasses('content')}>
-        <Outlet />
+    <IntlProvider messages={adminMessagesFor(locale)} locale={locale} defaultLocale="en">
+      <div className={getClasses()}>
+        {!isLoginPage && <AdminNavBar />}
+        <div className={getClasses('content', { 'no-nav': isLoginPage })}>
+          <Outlet />
+        </div>
       </div>
-    </div>
+    </IntlProvider>
   );
 }

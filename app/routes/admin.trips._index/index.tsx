@@ -1,8 +1,10 @@
+import { FormattedMessage, useIntl } from 'react-intl';
 import type { MetaFunction } from 'react-router';
 import { Link, useLoaderData } from 'react-router';
 
 import Card from '~/components/Card';
 import { FIXTURE_TRIPS } from '~/data/admin-fixtures';
+import type { Locale } from '~/intl';
 import { formatDateRange } from '~/utils/format-date-range';
 import { formatArs } from '~/utils/format-money';
 import { getClassMaker } from '~/utils/utils';
@@ -25,13 +27,17 @@ export async function loader() {
 
 export default function AdminTrips() {
   const { trips } = useLoaderData<typeof loader>();
+  const { formatMessage, locale } = useIntl();
+  const ongoingLabel = formatMessage({ id: 'ADMIN_TRIP_ONGOING' });
 
   return (
     <div className={getClasses()}>
-      <h1 className={getClasses('title')}>Trips</h1>
+      <h1 className={getClasses('title')}>
+        <FormattedMessage id="ADMIN_TRIPS_TITLE" />
+      </h1>
       {trips.length === 0 ? (
         <p className={getClasses('empty-state')} role="status">
-          No trips tagged yet.
+          <FormattedMessage id="ADMIN_TRIPS_EMPTY" />
         </p>
       ) : (
         <div className={getClasses('list')}>
@@ -39,7 +45,10 @@ export default function AdminTrips() {
             <Link key={trip.id} to={`/admin/trips/${trip.id}`} className={getClasses('card-link')}>
               <Card
                 title={trip.name}
-                texts={[formatDateRange(trip.startDate, trip.endDate), formatArs(trip.total.ars)]}
+                texts={[
+                  formatDateRange(trip.startDate, trip.endDate, locale as Locale, ongoingLabel),
+                  formatArs(trip.total.ars),
+                ]}
               />
             </Link>
           ))}
