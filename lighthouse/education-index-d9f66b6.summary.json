@@ -1,9 +1,9 @@
 {
-  "fetchTime": "2026-09-26T22:29:33.630Z",
-  "requestedUrl": "https://gonzalo-alvarez-campos-cv.com/education/degree",
-  "finalUrl": "https://gonzalo-alvarez-campos-cv.com/education/degree",
+  "fetchTime": "2026-09-27T21:41:55.195Z",
+  "requestedUrl": "https://gonzalo-alvarez-campos-cv.com/education",
+  "finalUrl": "https://gonzalo-alvarez-campos-cv.com/education",
   "lighthouseVersion": "13.4.1",
-  "commit": "2a35fbd",
+  "commit": "d9f66b6",
   "categories": {
     "performance": 0.92,
     "accessibility": 1,
@@ -13,22 +13,22 @@
   "metrics": {
     "fcp": {
       "displayValue": "2.5 s",
-      "numericValue": 2463.5119,
+      "numericValue": 2467.2045,
       "score": 0.68
     },
     "lcp": {
       "displayValue": "2.9 s",
-      "numericValue": 2870.2678499999993,
+      "numericValue": 2868.0112500000005,
       "score": 0.81
     },
     "si": {
       "displayValue": "2.5 s",
-      "numericValue": 2463.5119,
+      "numericValue": 2467.2045,
       "score": 0.98
     },
     "tbt": {
-      "displayValue": "10 ms",
-      "numericValue": 5.5,
+      "displayValue": "0 ms",
+      "numericValue": 0,
       "score": 1
     },
     "cls": {
@@ -38,10 +38,10 @@
     },
     "tti": {
       "displayValue": "2.9 s",
-      "numericValue": 2893.8520774999993,
+      "numericValue": 2868.0112500000005,
       "score": 0.96
     },
-    "ttfb": 83
+    "ttfb": 27
   },
   "failingAudits": [
     {
@@ -87,7 +87,7 @@
     {
       "id": "render-blocking-insight",
       "title": "Render-blocking requests",
-      "score": 0
+      "score": 0.5
     }
   ]
 }

@@ -1,68 +1,78 @@
 {
-  "fetchTime": "2026-09-21T22:44:42.177Z",
-  "requestedUrl": "https://gonzalo-alvarez-campos-cv.com/education/degree",
-  "finalUrl": "https://gonzalo-alvarez-campos-cv.com/education/degree",
+  "fetchTime": "2026-09-27T21:41:41.695Z",
+  "requestedUrl": "https://gonzalo-alvarez-campos-cv.com/",
+  "finalUrl": "https://gonzalo-alvarez-campos-cv.com/",
   "lighthouseVersion": "13.4.1",
-  "commit": "5efaa4a",
+  "commit": "d9f66b6",
   "categories": {
-    "performance": 0.95,
+    "performance": 0.81,
     "accessibility": 1,
     "best-practices": 1,
     "seo": 1
   },
   "metrics": {
     "fcp": {
-      "displayValue": "2.1 s",
-      "numericValue": 2132.3017,
-      "score": 0.8
+      "displayValue": "3.3 s",
+      "numericValue": 3330.1309999999994,
+      "score": 0.39
     },
     "lcp": {
-      "displayValue": "2.6 s",
-      "numericValue": 2582.3017,
-      "score": 0.88
+      "displayValue": "3.8 s",
+      "numericValue": 3764.8635,
+      "score": 0.56
     },
     "si": {
-      "displayValue": "2.1 s",
-      "numericValue": 2132.3017,
-      "score": 0.99
+      "displayValue": "3.3 s",
+      "numericValue": 3330.1309999999994,
+      "score": 0.9
     },
     "tbt": {
-      "displayValue": "0 ms",
-      "numericValue": 0,
-      "score": 1
+      "displayValue": "100 ms",
+      "numericValue": 98.6534999999999,
+      "score": 0.98
     },
     "cls": {
       "displayValue": "0",
-      "numericValue": 0,
+      "numericValue": 0.0001990404033765582,
       "score": 1
     },
     "tti": {
-      "displayValue": "2.6 s",
-      "numericValue": 2582.3017,
-      "score": 0.98
+      "displayValue": "3.9 s",
+      "numericValue": 3922.57815,
+      "score": 0.88
     },
-    "ttfb": 27
+    "ttfb": 315
   },
   "failingAudits": [
     {
       "id": "first-contentful-paint",
       "title": "First Contentful Paint",
-      "score": 0.8
+      "score": 0.39
     },
     {
       "id": "largest-contentful-paint",
       "title": "Largest Contentful Paint",
-      "score": 0.88
+      "score": 0.56
     },
     {
       "id": "speed-index",
       "title": "Speed Index",
-      "score": 0.99
+      "score": 0.9
+    },
+    {
+      "id": "total-blocking-time",
+      "title": "Total Blocking Time",
+      "score": 0.98
+    },
+    {
+      "id": "max-potential-fid",
+      "title": "Max Potential First Input Delay",
+      "score": 0.66
     },
     {
       "id": "interactive",
       "title": "Time to Interactive",
-      "score": 0.98
+      "score": 0.88
     },
     {
       "id": "unused-javascript",
