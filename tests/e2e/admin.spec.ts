@@ -201,3 +201,70 @@ test.describe('Admin year view (/admin/year/:year)', () => {
     await expect(page).toHaveURL(/\/admin\/year\/\d{4}$/);
   });
 });
+
+test.describe('Admin trips list (/admin/trips)', () => {
+  test('shows both trips and links to their detail pages', async ({ page }) => {
+    await page.goto('/admin/trips');
+    await expect(page.getByRole('heading', { name: 'Trips', level: 1 })).toBeVisible();
+    await expect(page.getByRole('link', { name: /Bariloche/ })).toHaveAttribute(
+      'href',
+      '/admin/trips/bariloche-2026-01'
+    );
+    await expect(page.getByRole('link', { name: /Cataratas del Iguazú/ })).toHaveAttribute(
+      'href',
+      '/admin/trips/iguazu-2025-11'
+    );
+  });
+
+  test('clicking a trip navigates to its detail page', async ({ page }) => {
+    await page.goto('/admin/trips');
+    await page.getByRole('link', { name: /Bariloche/ }).click();
+    await expect(page).toHaveURL('/admin/trips/bariloche-2026-01');
+    await expect(page.getByRole('heading', { name: 'Bariloche', level: 1 })).toBeVisible();
+  });
+});
+
+test.describe('Admin trip detail (/admin/trips/:tripId)', () => {
+  test('shows a populated trip with the pie chart, categories, and transactions', async ({
+    page,
+  }) => {
+    await page.goto('/admin/trips/bariloche-2026-01');
+    await page.waitForLoadState('networkidle');
+    await expect(page.getByRole('heading', { name: 'Bariloche', level: 1 })).toBeVisible();
+    await expect(page.locator('.recharts-pie-sector')).toHaveCount(3);
+    await expect(page.getByText('Hotel — 7 nights')).toBeVisible();
+  });
+
+  test('shows the empty state for a trip with no synced expenses', async ({ page }) => {
+    await page.goto('/admin/trips/iguazu-2025-11');
+    await expect(page.getByText(/nothing logged for this trip yet/i)).toBeVisible();
+  });
+
+  test('isolating a category filters the transaction list and swaps the total', async ({
+    page,
+  }) => {
+    await page.goto('/admin/trips/bariloche-2026-01');
+    const transportRow = page.getByRole('button', { name: /Transport/ }).first();
+
+    await transportRow.click();
+    await expect(transportRow).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByText('Showing Transport only')).toBeVisible();
+    await expect(page.getByText('Flights')).toBeVisible();
+    await expect(page.getByText('Hotel — 7 nights')).toHaveCount(0);
+    // Category total (150,000 ARS), not the trip total (450,000).
+    await expect(page.locator('.admin-trip-route__total')).toContainText('150.000');
+  });
+
+  test('back link returns to the trips list', async ({ page }) => {
+    await page.goto('/admin/trips/bariloche-2026-01');
+    await page.getByRole('link', { name: /back to trips/i }).click();
+    await expect(page).toHaveURL('/admin/trips');
+  });
+
+  test('renders the ErrorBoundary for an unknown trip id', async ({ page }) => {
+    await page.goto('/admin/trips/nope', { waitUntil: 'domcontentloaded' });
+    await expect(page.getByText(/that trip doesn't exist/i)).toBeVisible();
+    await page.getByRole('link', { name: /back to trips/i }).click();
+    await expect(page).toHaveURL('/admin/trips');
+  });
+});

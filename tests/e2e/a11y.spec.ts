@@ -23,6 +23,8 @@ const ROUTES = [
   { name: 'admin-login', path: '/admin' },
   { name: 'admin-month', path: '/admin/month/2026-08' },
   { name: 'admin-year', path: '/admin/year/2025' },
+  { name: 'admin-trips-index', path: '/admin/trips' },
+  { name: 'admin-trip-detail', path: '/admin/trips/bariloche-2026-01' },
 ];
 
 const BLOCKING_IMPACTS = ['serious', 'critical'];
@@ -87,5 +89,17 @@ test.describe('Accessibility (axe)', () => {
       .first()
       .click();
     await expectNoBlockingViolations(page, '/admin/year/2025 (Groceries isolated)');
+  });
+
+  test('admin-trip-detail (category isolated) has no serious or critical violations', async ({
+    page,
+  }) => {
+    await page.goto('/admin/trips/bariloche-2026-01');
+    await page.waitForLoadState('networkidle');
+    await page
+      .getByRole('button', { name: /Transport/ })
+      .first()
+      .click();
+    await expectNoBlockingViolations(page, '/admin/trips/bariloche-2026-01 (Transport isolated)');
   });
 });

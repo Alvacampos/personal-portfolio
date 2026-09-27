@@ -6,6 +6,9 @@ import {
   FIXTURE_CATEGORIES,
   FIXTURE_MONTH,
   FIXTURE_MONTH_EMPTY,
+  FIXTURE_TRIP,
+  FIXTURE_TRIP_EMPTY,
+  FIXTURE_TRIPS,
   FIXTURE_YEAR,
   FIXTURE_YTD,
 } from './admin-fixtures';
@@ -13,6 +16,8 @@ import {
   parseCategoriesResponse,
   parseMonthlyAnalysisResponse,
   parseMonthResponse,
+  parseTripResponse,
+  parseTripsResponse,
   parseYearResponse,
 } from './admin-schema';
 
@@ -60,5 +65,21 @@ describe('admin API contract fixtures', () => {
   it('rejects a month response missing a required field', () => {
     const bad = { ...FIXTURE_MONTH, total: undefined };
     expect(() => parseMonthResponse(bad)).toThrow(/total/);
+  });
+
+  it('parses the trips list', () => {
+    const data = parseTripsResponse(FIXTURE_TRIPS);
+    expect(data).toHaveLength(2);
+  });
+
+  it('parses a populated trip and its categories sum to its total', () => {
+    const data = parseTripResponse(FIXTURE_TRIP);
+    expect(data.transactions).toHaveLength(6);
+    expect(data.categories.reduce((sum, c) => sum + c.total.ars, 0)).toBe(data.total.ars);
+  });
+
+  it('parses an empty trip', () => {
+    const data = parseTripResponse(FIXTURE_TRIP_EMPTY);
+    expect(data.transactions).toHaveLength(0);
   });
 });

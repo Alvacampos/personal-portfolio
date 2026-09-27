@@ -39,20 +39,48 @@
 
 ### Frontend (this repo, `/admin/*`)
 
-| Phase                                   | Status | Notes                                                                                                                                                     |
-| --------------------------------------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Phase A — Static shell against fixtures | done   | Routes, `admin` layout + nav, month view (header/categories/transactions/analysis) against fixtures, e2e-covered. Chart + isolate interaction is Phase B. |
-| Phase B — Charts (pie + category list)  | done   | Recharts pie chart + category-list isolate/filter interaction, e2e-covered. Bar chart is Phase D.                                                         |
-| Phase C — Auth + live integration       | open   | Blocked on backend Phase 5 existing for real, but the shell can be built against fixtures first.                                                          |
-| Phase D — Yearly view                   | done   | Bar chart + same pie/category isolate pattern as month view, e2e-covered. Same-year-over-year comparison remains a fast-follow, not v1.                   |
-| Phase E — Claude analysis section       | open   | Blocked on backend Phase 4C.                                                                                                                              |
-| Phase F — Vacations                     | open   | Planning UI deliberately deferred (wait-and-see, frontend §6) — list/detail view only for v1.                                                             |
+| Phase                                   | Status | Notes                                                                                                                                                                                                     |
+| --------------------------------------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Phase A — Static shell against fixtures | done   | Routes, `admin` layout + nav, month view (header/categories/transactions/analysis) against fixtures, e2e-covered. Chart + isolate interaction is Phase B.                                                 |
+| Phase B — Charts (pie + category list)  | done   | Recharts pie chart + category-list isolate/filter interaction, e2e-covered. Bar chart is Phase D.                                                                                                         |
+| Phase C — Auth + live integration       | open   | Blocked on backend Phase 5 existing for real, but the shell can be built against fixtures first.                                                                                                          |
+| Phase D — Yearly view                   | done   | Bar chart + same pie/category isolate pattern as month view, e2e-covered. Same-year-over-year comparison remains a fast-follow, not v1.                                                                   |
+| Phase E — Claude analysis section       | open   | Blocked on backend Phase 4C.                                                                                                                                                                              |
+| Phase F — Vacations                     | done   | Trips list + detail (pie/category isolate, no analysis), e2e-covered. Trip/status/budget schema promoted from "future, not v1" to real endpoints — planning UI still deliberately deferred (frontend §6). |
 
 ## Decision log
 
 Newest first. Each entry: what was decided or tried, and why — especially
 the "we tried X and backed out" entries, which are the ones worth having a
 record of.
+
+### 2026-09-26 — Phase F shipped: trips list + detail
+
+- Promoted trips from "future, not v1" (backend kickoff §3.7/§6) to real
+  schema: `TripsResponseSchema` (list) and `TripResponseSchema` (detail —
+  same shape as `MonthResponseSchema` minus `previousMonthTotal`/
+  `deltaPercent`/analysis, none of which apply to a trip) in
+  `app/data/admin-schema.ts`, plus fixtures (Bariloche populated,
+  Cataratas del Iguazú demonstrating the empty state — a trip that
+  exists but has no synced expenses yet).
+- Routes: `admin.trips._index` (a plain list, Card-per-trip, no redirect
+  needed — unlike month/year there's no "current" trip to default to)
+  and `admin.trips.$tripId` (total with ARS/USD toggle, pie chart +
+  category list isolate/filter via the shared hook, transaction list, no
+  analysis section). No prev/next nav — trips aren't chronologically
+  sequential the way months/years are, so a "back to trips" link
+  (education.$slug's pattern) replaces it.
+- **Genuine, considered difference from month/year's error handling**:
+  those routes 400 on a malformed param (a real format exists to
+  validate) and treat any well-formed-but-unknown value as the empty
+  state. A `tripId` has no such format — it's either a real trip or it
+  isn't — so an unknown one 404s instead (education.$slug's precedent),
+  while a real trip with no data yet still renders the empty state.
+- Added "Trips" to the admin nav — all three sections now exist.
+- Same recurring CSS-budget bump as every phase that's added `/admin`
+  stylesheets (16 → 19 KB) — expected, not a new finding; the root cause
+  (the bucket can't discriminate by route) was already diagnosed and
+  accepted in Phase B/D.
 
 ### 2026-09-26 — PR #332 adversarially reviewed: a real a11y gap + a stale comment
 

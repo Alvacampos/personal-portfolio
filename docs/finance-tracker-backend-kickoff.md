@@ -464,11 +464,15 @@ total and a USD-equivalent total (§3.5).
 | `GET /api/categories`                            | Category list (for chart legends/filters)                                                                                      | session                        |
 | `GET /api/months/{yyyy-mm}/analysis`             | Cached Claude-written monthly analysis; generates + caches on first request (Phase 4C)                                         | session                        |
 | `POST /api/months/{yyyy-mm}/analysis/regenerate` | Forces a fresh analysis, overwriting the cached copy — backs the frontend's "Regenerate" button; only valid for elapsed months | session                        |
+| `GET /api/trips`                                 | List of trips — id, name, date range, status, total spend so far (frontend Phase F)                                            | session                        |
+| `GET /api/trips/{id}`                            | Same shape as `/api/months`, minus `previousMonthTotal`/`deltaPercent`/analysis (none apply to a trip); 404 if unknown         | session                        |
 | `GET /api/health`                                | Liveness check for the hosting provider                                                                                        | none                           |
 
-**Future, not v1** (§3.7): `GET /api/trips`, `GET /api/trips/{id}` — same
-shape as the month/year endpoints, scoped to a trip instead of a calendar
-period.
+Trips were originally scoped as "future, not v1" (§3.7) but the frontend
+now implements against them (Phase F) — promoted here to match. The
+planning UI (`status: 'planned'`) is still a deliberate wait-and-see, not
+built yet (finance-frontend.md §6); the schema and these endpoints exist
+regardless since a `completed`/`active` trip needed them either way.
 
 **Monthly analysis, briefly** (full frontend UX lives in the frontend
 repo, not duplicated here): generated **once per elapsed month**, cached
@@ -619,6 +623,62 @@ across all of them:
 
   `POST /api/months/{yyyy-mm}/analysis/regenerate` returns the same
   `"ready"` shape on success.
+
+- `GET /api/trips`:
+
+  ```json
+  [
+    {
+      "id": "bariloche-2026-01",
+      "name": "Bariloche",
+      "startDate": "2026-01-10",
+      "endDate": "2026-01-17",
+      "status": "completed",
+      "total": { "ars": 450000, "usd": 329 }
+    }
+  ]
+  ```
+
+- `GET /api/trips/{id}` — same shape as `GET /api/months/{yyyy-mm}` minus
+  `previousMonthTotal`/`deltaPercent` (a trip has no "previous trip" to
+  compare against) and with no analysis equivalent:
+
+  ```json
+  {
+    "id": "bariloche-2026-01",
+    "name": "Bariloche",
+    "startDate": "2026-01-10",
+    "endDate": "2026-01-17",
+    "status": "completed",
+    "total": { "ars": 450000, "usd": 329 },
+    "categories": [
+      {
+        "categoryId": "other",
+        "categoryName": "Other",
+        "total": { "ars": 180000, "usd": 131 },
+        "transactionCount": 1
+      }
+    ],
+    "transactions": [
+      {
+        "id": "tx_101",
+        "occurredOn": "2026-01-10",
+        "categoryId": "other",
+        "categoryName": "Other",
+        "description": "Hotel — 7 nights",
+        "amount": { "ars": 180000, "usd": 131 },
+        "currency": "ARS",
+        "paidBy": "You",
+        "tripId": "bariloche-2026-01"
+      }
+    ]
+  }
+  ```
+
+  A 404 (not an empty 200) for an unknown `id` — a `tripId` has no valid
+  "format" to fall back to an empty-state response for the way a
+  malformed month/year param does; it either matches a real trip or it
+  doesn't.
 
 ---
 
