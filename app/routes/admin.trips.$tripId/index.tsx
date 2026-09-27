@@ -8,6 +8,7 @@ import PieChart from '~/components/PieChart';
 import { FIXTURE_TRIP, FIXTURE_TRIPS } from '~/data/admin-fixtures';
 import type { TripResponse } from '~/data/admin-schema';
 import { getCategoryColor } from '~/utils/category-colors';
+import { formatDateRange } from '~/utils/format-date-range';
 import { formatArs, formatUsd } from '~/utils/format-money';
 import { useCategoryIsolation } from '~/utils/use-category-isolation';
 import { getClassMaker } from '~/utils/utils';
@@ -62,12 +63,6 @@ export function ErrorBoundary() {
   );
 }
 
-function formatDateRange(startDate: string, endDate: string | null): string {
-  const start = format(parseISO(startDate), 'MMM d, yyyy');
-  if (!endDate) return `${start} — ongoing`;
-  return `${start} – ${format(parseISO(endDate), 'MMM d, yyyy')}`;
-}
-
 export default function AdminTrip() {
   const { trip } = useLoaderData<typeof loader>();
   const [showUsd, setShowUsd] = useState(false);
@@ -113,8 +108,12 @@ export default function AdminTrip() {
       </header>
 
       {!hasData ? (
+        // No "yet" — unlike a month/year, which is always either the
+        // current period or a past one, a trip can be `completed` with
+        // genuinely nothing recorded, and "yet" would wrongly imply more
+        // data is still coming.
         <p className={getClasses('empty-state')} role="status">
-          Nothing logged for this trip yet.
+          Nothing logged for this trip.
         </p>
       ) : (
         <>

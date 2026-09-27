@@ -110,17 +110,14 @@ const tripSummary = z.object({
 
 export const TripsResponseSchema = z.array(tripSummary);
 
-// Same shape as MonthResponseSchema minus the fields that don't apply to
-// a trip: no previousMonthTotal/deltaPercent (a trip has no "previous
-// trip" to compare against), no monthly-analysis equivalent (§6: Claude
-// analysis stays a monthly-only feature for v1).
-export const TripResponseSchema = z.object({
-  id: z.string().min(1),
-  name: z.string().min(1),
-  startDate: isoDate,
-  endDate: isoDate.nullable(),
-  status: tripStatus,
-  total: moneyAmount,
+// Extends tripSummary rather than repeating its fields — otherwise a
+// later change to one could silently drift from the other. Adds what a
+// trip's detail view needs beyond the summary; deliberately missing
+// what a month/year response has that doesn't apply to a trip: no
+// previousMonthTotal/deltaPercent (a trip has no "previous trip" to
+// compare against), no monthly-analysis equivalent (§6: Claude analysis
+// stays a monthly-only feature for v1).
+export const TripResponseSchema = tripSummary.extend({
   categories: z.array(categoryBreakdown),
   transactions: z.array(transaction),
 });

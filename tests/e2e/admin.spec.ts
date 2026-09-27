@@ -237,7 +237,7 @@ test.describe('Admin trip detail (/admin/trips/:tripId)', () => {
 
   test('shows the empty state for a trip with no synced expenses', async ({ page }) => {
     await page.goto('/admin/trips/iguazu-2025-11');
-    await expect(page.getByText(/nothing logged for this trip yet/i)).toBeVisible();
+    await expect(page.getByText(/nothing logged for this trip\./i)).toBeVisible();
   });
 
   test('isolating a category filters the transaction list and swaps the total', async ({

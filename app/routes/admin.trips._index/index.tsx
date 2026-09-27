@@ -1,9 +1,9 @@
-import { format, parseISO } from 'date-fns';
 import type { MetaFunction } from 'react-router';
 import { Link, useLoaderData } from 'react-router';
 
 import Card from '~/components/Card';
 import { FIXTURE_TRIPS } from '~/data/admin-fixtures';
+import { formatDateRange } from '~/utils/format-date-range';
 import { formatArs } from '~/utils/format-money';
 import { getClassMaker } from '~/utils/utils';
 
@@ -21,12 +21,6 @@ const getClasses = getClassMaker(BLOCK);
 // fetch to GET /api/trips (docs/finance-tracker-backend-kickoff.md §6).
 export async function loader() {
   return { trips: FIXTURE_TRIPS };
-}
-
-function formatDateRange(startDate: string, endDate: string | null): string {
-  const start = format(parseISO(startDate), 'MMM d, yyyy');
-  if (!endDate) return `${start} — ongoing`;
-  return `${start} – ${format(parseISO(endDate), 'MMM d, yyyy')}`;
 }
 
 export default function AdminTrips() {
