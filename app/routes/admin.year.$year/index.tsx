@@ -1,4 +1,3 @@
-import { format, parse } from 'date-fns';
 import { useState } from 'react';
 import { FormattedMessage, useIntl } from 'react-intl';
 import type { LoaderFunctionArgs, MetaFunction } from 'react-router';
@@ -6,12 +5,11 @@ import { isRouteErrorResponse, Link, useLoaderData, useRouteError } from 'react-
 
 import BarChart from '~/components/BarChart';
 import PieChart from '~/components/PieChart';
-import { FIXTURE_YEAR, FIXTURE_YTD } from '~/data/admin-fixtures';
-import type { YearResponse } from '~/data/admin-schema';
 import type { Locale } from '~/intl';
 import { getCategoryColor } from '~/utils/category-colors';
-import { getDateFnsLocale } from '~/utils/date-fns-locale';
 import { formatArs, formatUsd } from '~/utils/format-money';
+import { formatMonthLabel } from '~/utils/format-month-label';
+import { getYearFixture } from '~/utils/get-year-fixture';
 import { useCategoryIsolation } from '~/utils/use-category-isolation';
 import { getClassMaker } from '~/utils/utils';
 
@@ -23,25 +21,6 @@ const BLOCK = 'admin-year-route';
 const getClasses = getClassMaker(BLOCK);
 
 const YEAR_RE = /^\d{4}$/;
-
-// Phase D stands in for the real backend with fixtures
-// (docs/finance-frontend.md §12) — 2025 demonstrates a completed
-// calendar year, 2026 (the real "current" year) demonstrates YTD
-// (fewer months than 12, same shape — finance-tracker-backend-kickoff.md
-// §6 says `/api/ytd` is "same shape as /years, bounded at today"), and
-// every other year demonstrates the empty state. Phase C replaces this
-// with a real fetch to GET /api/years/{yyyy} or GET /api/ytd.
-function formatMonthLabel(yyyyMm: string, locale?: Locale): string {
-  return format(parse(yyyyMm, 'yyyy-MM', new Date()), 'MMMM yyyy', {
-    locale: locale ? getDateFnsLocale(locale) : undefined,
-  });
-}
-
-function getYearFixture(year: number): YearResponse {
-  if (year === 2025) return FIXTURE_YEAR;
-  if (year === 2026) return FIXTURE_YTD;
-  return { year, total: { ars: 0, usd: 0 }, monthlyTotals: [], categories: [] };
-}
 
 export async function loader({ params }: LoaderFunctionArgs) {
   const yearParam = params.year;

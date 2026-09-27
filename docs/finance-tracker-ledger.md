@@ -47,8 +47,8 @@
 | Phase D — Yearly view                   | done   | Bar chart + same pie/category isolate pattern as month view, e2e-covered. Same-year-over-year comparison remains a fast-follow, not v1.                                                                   |
 | Phase E — Claude analysis section       | open   | Blocked on backend Phase 4C.                                                                                                                                                                              |
 | Phase F — Vacations                     | done   | Trips list + detail (pie/category isolate, no analysis), e2e-covered. Trip/status/budget schema promoted from "future, not v1" to real endpoints — planning UI still deliberately deferred (frontend §6). |
-| Phase G — Portfolio-parity chrome       | open   | `AdminNavBar` (side rail desktop / bottom tabs mobile) + react-intl retrofit of Phases A–F. Blocks H/I/J.                                                                                                 |
-| Phase H — Home                          | open   | Repurposes `/admin/dashboard` into a real landing page (frontend §13).                                                                                                                                    |
+| Phase G — Portfolio-parity chrome       | done   | `AdminNavBar` (side rail desktop / bottom tabs mobile) + react-intl retrofit of Phases A–F, e2e + a11y-covered. PR #334.                                                                                  |
+| Phase H — Home                          | done   | Repurposes `/admin/dashboard` into a real landing page — this year's months as cards, newest first, `getYearFixture` shared with the yearly view (frontend §13). e2e + a11y-covered.                      |
 | Phase I — Calendar                      | open   | New section (frontend §14) — no new backend surface needed.                                                                                                                                               |
 | Phase J — Vacation planning UI          | open   | Decided: read-only planned-vs-actual (frontend §6) — `budget` shown alongside actual total, no write endpoints/forms.                                                                                     |
 
@@ -57,6 +57,37 @@
 Newest first. Each entry: what was decided or tried, and why — especially
 the "we tried X and backed out" entries, which are the ones worth having a
 record of.
+
+### 2026-09-27 — Phase G merged (PR #334); Phase H (Home) built and shipped
+
+Phase G's own build surfaced two loose ends beyond the nav/i18n retrofit
+itself, both fixed before opening the PR:
+
+- `BarChart` and `formatDateRange` both gained a required `locale` (and,
+  for the latter, `ongoingLabel`) parameter as part of the retrofit, but
+  their callers in `admin.year.$year` and both trip routes weren't
+  updated in the same pass — the repo didn't typecheck for a stretch.
+  Fixed by threading `locale` through every remaining call site.
+- The admin intl JSON used curly `'` apostrophes in three error-title
+  strings (copied from habit, not from the existing convention); the
+  public site's `en-US.json` uses straight `'` throughout. Caught by the
+  e2e suite (`admin.spec.ts`'s regexes expect straight quotes), not by
+  eye — a reminder that "looks right" and "matches the file's actual
+  bytes" aren't the same check.
+
+Phase H (Home) followed immediately on a fresh branch off the merged
+`main`: `/admin/dashboard` is now a real landing page — the current
+year's `monthlyTotals` (same fixture `getYearFixture` reads for the
+yearly view, extracted to `app/utils/get-year-fixture.ts` rather than
+duplicated) as a tappable card grid, newest first, per frontend §13.
+`formatMonthLabel` was also extracted (`app/utils/format-month-label.ts`)
+once Home became its third identical call site alongside month/year.
+
+One knock-on fix: the month view's `ErrorBoundary` used to link back to
+`/admin/dashboard` under the label "Back to current month" — accurate
+when that route redirected to the current month, wrong now that it's
+Home. Relabeled to "Back to Home" (`ADMIN_BACK_TO_HOME`), caught by the
+e2e suite's now-stale assertion rather than by inspection.
 
 ### 2026-09-27 — Two decisions reversed, two sections added, one fork reopened
 

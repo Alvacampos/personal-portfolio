@@ -12,6 +12,7 @@ import type { Locale } from '~/intl';
 import { getCategoryColor } from '~/utils/category-colors';
 import { getDateFnsLocale } from '~/utils/date-fns-locale';
 import { formatArs, formatUsd } from '~/utils/format-money';
+import { formatMonthLabel } from '~/utils/format-month-label';
 import { useCategoryIsolation } from '~/utils/use-category-isolation';
 import { getClassMaker } from '~/utils/utils';
 
@@ -54,15 +55,6 @@ function toYearMonth(monthDate: Date): string {
   return format(monthDate, 'yyyy-MM');
 }
 
-// Locale is a plain param, not read from context — this runs both from
-// the component (real admin locale) and from `meta` (no intl context
-// available there, same as the public site never localizing <title>).
-function formatMonthLabel(yyyyMm: string, locale?: Locale): string {
-  return format(parseYearMonth(yyyyMm), 'MMMM yyyy', {
-    locale: locale ? getDateFnsLocale(locale) : undefined,
-  });
-}
-
 export async function loader({ params }: LoaderFunctionArgs) {
   const yyyyMm = params.yyyyMm;
   if (!yyyyMm || !YEAR_MONTH_RE.test(yyyyMm)) {
@@ -94,7 +86,7 @@ export function ErrorBoundary() {
         <FormattedMessage id="ADMIN_MONTH_ERROR_BODY" />
       </p>
       <Link to="/admin/dashboard" className={getClasses('error-action')}>
-        <span aria-hidden="true">←</span> <FormattedMessage id="ADMIN_BACK_TO_CURRENT_MONTH" />
+        <span aria-hidden="true">←</span> <FormattedMessage id="ADMIN_BACK_TO_HOME" />
       </Link>
     </div>
   );

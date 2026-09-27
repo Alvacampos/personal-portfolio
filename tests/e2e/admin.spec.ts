@@ -9,16 +9,28 @@ test.describe('Admin login (/admin)', () => {
     await expect(page.getByRole('link', { name: /github profile/i })).toHaveCount(0);
   });
 
-  test('sign-in leads to the dashboard redirect', async ({ page }) => {
+  test('sign-in leads to Home', async ({ page }) => {
     await page.goto('/admin');
     await page.getByRole('link', { name: /sign in with google/i }).click();
-    await expect(page).toHaveURL(/\/admin\/month\/\d{4}-\d{2}$/);
+    await expect(page).toHaveURL('/admin/dashboard');
   });
 });
 
-test.describe('Admin dashboard (/admin/dashboard)', () => {
-  test('redirects to the current month', async ({ page }) => {
+test.describe('Admin Home (/admin/dashboard)', () => {
+  test('shows this year as a grid of month cards, newest first', async ({ page }) => {
     await page.goto('/admin/dashboard');
+    await expect(page.getByRole('heading', { name: /this year/i, level: 1 })).toBeVisible();
+    // Fixture-backed for the current year (docs/finance-frontend.md
+    // §12/§13) — like the month view's own populated-vs-empty fixture
+    // split, this degrades to the empty-state assertion below once the
+    // fixture year rolls past what admin-fixtures.ts covers.
+    const monthLinks = page.getByRole('link').filter({ hasText: /\d{4}/ });
+    await expect(monthLinks.first()).toBeVisible();
+  });
+
+  test('clicking a month card navigates to its month view', async ({ page }) => {
+    await page.goto('/admin/dashboard');
+    await page.getByRole('link').filter({ hasText: /\d{4}/ }).first().click();
     await expect(page).toHaveURL(/\/admin\/month\/\d{4}-\d{2}$/);
   });
 });
@@ -63,8 +75,8 @@ test.describe('Admin month view (/admin/month/:yyyyMm)', () => {
   test('renders the ErrorBoundary for a malformed month param', async ({ page }) => {
     await page.goto('/admin/month/not-a-month', { waitUntil: 'domcontentloaded' });
     await expect(page.getByText(/that month doesn't look right/i)).toBeVisible();
-    await page.getByRole('link', { name: /back to current month/i }).click();
-    await expect(page).toHaveURL(/\/admin\/month\/\d{4}-\d{2}$/);
+    await page.getByRole('link', { name: /back to home/i }).click();
+    await expect(page).toHaveURL('/admin/dashboard');
   });
 
   test('renders the pie chart with one slice per category', async ({ page }) => {
