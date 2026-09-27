@@ -6,6 +6,11 @@
 
 .search-filter-bar__input {
   flex: 1;
+  /* Flex items default to `min-width: auto`, which for a text input is
+   * its UA-default min-content width (~170px) — that floor stopped
+   * this from shrinking enough on narrow viewports, overflowing past
+   * its own container into the sibling "Jump to month" control. */
+  min-width: 0;
   height: var(--space-40);
   border-radius: var(--border-6);
   border: 1px solid var(--border-default);
