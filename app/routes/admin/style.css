@@ -5,14 +5,22 @@
 }
 
 .admin-layout__content {
+  /* No explicit `width` — a block element's default `auto` width
+   * already fills the container exactly, subtracting padding/border
+   * as part of what "auto" means, in default content-box sizing.
+   * `width: 100%` was redundant for that and actively wrong once
+   * combined with `padding`: 100% of the container plus padding on
+   * top is wider than the container, overflowing on mobile (no
+   * `max-width` constraint applies below the breakpoint where it'd
+   * otherwise clip). */
   padding: var(--space-16);
   max-width: 1024px;
   margin: 0 auto;
-  width: 100%;
   /* Clears the fixed bottom tab bar (mobile) — not derived from a
    * shared token since AdminNavBar's own height isn't exposed as one;
-   * generous rather than exact, the tab bar is short. */
-  padding-bottom: calc(var(--space-80) + var(--space-16));
+   * measured at ~132px (utility row + nav links + bordered sign-out
+   * button) with a buffer on top, not exact-to-the-pixel. */
+  padding-bottom: calc(var(--space-80) + var(--space-72));
 }
 
 /* Compound selector, not `.admin-layout__content--no-nav` — getClassMaker's
@@ -28,5 +36,11 @@
      * $bp-md width exactly, same var(--space-200) NavBar's rail uses. */
     padding-left: calc(var(--space-200) + var(--space-16));
     padding-bottom: var(--space-16);
+  }
+
+  /* The login page renders no nav at all — reserving rail clearance for
+   * it here pushed the centered content off-axis to the right. */
+  .admin-layout__content.admin-layout--no-nav {
+    padding-left: var(--space-16);
   }
 }

@@ -1,17 +1,24 @@
-import { format, parse } from 'date-fns';
 import { useState } from 'react';
 import { FormattedMessage, useIntl } from 'react-intl';
 import type { LoaderFunctionArgs, MetaFunction } from 'react-router';
-import { isRouteErrorResponse, Link, useLoaderData, useRouteError } from 'react-router';
+import {
+  isRouteErrorResponse,
+  Link,
+  useLoaderData,
+  useNavigate,
+  useRouteError,
+} from 'react-router';
 
 import BarChart from '~/components/BarChart';
 import PieChart from '~/components/PieChart';
-import { FIXTURE_YEAR, FIXTURE_YTD } from '~/data/admin-fixtures';
-import type { YearResponse } from '~/data/admin-schema';
+import SearchFilterBar from '~/components/SearchFilterBar';
 import type { Locale } from '~/intl';
+import { adminMeta } from '~/utils/admin-meta';
 import { getCategoryColor } from '~/utils/category-colors';
-import { getDateFnsLocale } from '~/utils/date-fns-locale';
 import { formatArs, formatUsd } from '~/utils/format-money';
+import { formatMonthLabel } from '~/utils/format-month-label';
+import { getCategoryLabel } from '~/utils/get-category-label';
+import { getYearFixture } from '~/utils/get-year-fixture';
 import { useCategoryIsolation } from '~/utils/use-category-isolation';
 import { getClassMaker } from '~/utils/utils';
 
@@ -23,25 +30,6 @@ const BLOCK = 'admin-year-route';
 const getClasses = getClassMaker(BLOCK);
 
 const YEAR_RE = /^\d{4}$/;
-
-// Phase D stands in for the real backend with fixtures
-// (docs/finance-frontend.md §12) — 2025 demonstrates a completed
-// calendar year, 2026 (the real "current" year) demonstrates YTD
-// (fewer months than 12, same shape — finance-tracker-backend-kickoff.md
-// §6 says `/api/ytd` is "same shape as /years, bounded at today"), and
-// every other year demonstrates the empty state. Phase C replaces this
-// with a real fetch to GET /api/years/{yyyy} or GET /api/ytd.
-function formatMonthLabel(yyyyMm: string, locale?: Locale): string {
-  return format(parse(yyyyMm, 'yyyy-MM', new Date()), 'MMMM yyyy', {
-    locale: locale ? getDateFnsLocale(locale) : undefined,
-  });
-}
-
-function getYearFixture(year: number): YearResponse {
-  if (year === 2025) return FIXTURE_YEAR;
-  if (year === 2026) return FIXTURE_YTD;
-  return { year, total: { ars: 0, usd: 0 }, monthlyTotals: [], categories: [] };
-}
 
 export async function loader({ params }: LoaderFunctionArgs) {
   const yearParam = params.year;
@@ -56,9 +44,8 @@ export async function loader({ params }: LoaderFunctionArgs) {
   };
 }
 
-export const meta: MetaFunction<typeof loader> = ({ loaderData }) => [
-  { title: loaderData ? `${loaderData.year.year} — Admin` : 'Admin' },
-];
+export const meta: MetaFunction<typeof loader> = ({ loaderData }) =>
+  adminMeta(loaderData ? `${loaderData.year.year} — Admin` : 'Admin');
 
 export function ErrorBoundary() {
   const error = useRouteError();
@@ -82,14 +69,39 @@ export function ErrorBoundary() {
 export default function AdminYear() {
   const { year, prevYear, nextYear } = useLoaderData<typeof loader>();
   const { formatMessage, locale } = useIntl();
+  const navigate = useNavigate();
   const [showUsd, setShowUsd] = useState(false);
   const hasData = year.categories.length > 0;
+
+  function goToMonth(yyyyMm: string) {
+    navigate(`/admin/month/${yyyyMm}`);
+  }
 
   const { activeCategoryId, activeCategory, toggleCategory, clearCategory } = useCategoryIsolation(
     year.categories,
     String(year.year)
   );
   const displayedTotal = activeCategory ? activeCategory.total : year.total;
+
+  const [categorySearch, setCategorySearch] = useState('');
+  // Colors stay tied to each category's original index — narrowing the
+  // list with a search shouldn't reshuffle which swatch means what.
+  const categoriesWithLabels = year.categories.map((category, index) => ({
+    ...category,
+    label: getCategoryLabel(category.categoryId, category.categoryName, formatMessage),
+    color: getCategoryColor(index),
+  }));
+  const normalizedSearch = categorySearch.trim().toLowerCase();
+  const filteredCategories = normalizedSearch
+    ? categoriesWithLabels.filter((category) =>
+        category.label.toLowerCase().includes(normalizedSearch)
+      )
+    : categoriesWithLabels;
+  const hasActiveFilter = categorySearch !== '' || activeCategoryId !== null;
+  function clearFilters() {
+    setCategorySearch('');
+    clearCategory();
+  }
 
   return (
     <div className={getClasses()}>
@@ -126,7 +138,13 @@ export default function AdminYear() {
           <p className={getClasses('active-category')}>
             <FormattedMessage
               id="ADMIN_SHOWING_CATEGORY_ONLY"
-              values={{ category: activeCategory.categoryName }}
+              values={{
+                category: getCategoryLabel(
+                  activeCategory.categoryId,
+                  activeCategory.categoryName,
+                  formatMessage
+                ),
+              }}
             />{' '}
             <button type="button" className={getClasses('clear-filter')} onClick={clearCategory}>
               <FormattedMessage id="ADMIN_SHOW_ALL" />
@@ -151,6 +169,7 @@ export default function AdminYear() {
                 value: entry.total.ars,
               }))}
               locale={locale as Locale}
+              onBarClick={goToMonth}
             />
             {/* Accessible equivalent of the chart above — visually hidden,
              * real content for screen readers. Unlike the pie chart, the
@@ -169,7 +188,7 @@ export default function AdminYear() {
           <PieChart
             data={year.categories.map((category) => ({
               id: category.categoryId,
-              label: category.categoryName,
+              label: getCategoryLabel(category.categoryId, category.categoryName, formatMessage),
               value: category.total.ars,
             }))}
             activeId={activeCategoryId}
@@ -180,31 +199,67 @@ export default function AdminYear() {
             <h2 id="categories-heading" className={getClasses('section-title')}>
               <FormattedMessage id="ADMIN_CATEGORIES_HEADING" />
             </h2>
-            <ul className={getClasses('category-list')}>
-              {year.categories.map((category, index) => {
-                const isActive = category.categoryId === activeCategoryId;
-                return (
-                  <li key={category.categoryId}>
-                    <button
-                      type="button"
-                      className={getClasses('category-row', { active: isActive })}
-                      onClick={() => toggleCategory(category.categoryId)}
-                      aria-pressed={isActive}
-                    >
-                      <span
-                        className={getClasses('category-swatch')}
-                        style={{ backgroundColor: getCategoryColor(index) }}
-                        aria-hidden="true"
-                      />
-                      <span className={getClasses('category-name')}>{category.categoryName}</span>
-                      <span className={getClasses('category-total')}>
-                        {formatArs(category.total.ars)}
-                      </span>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
+            <div className={getClasses('categories-toolbar')}>
+              <SearchFilterBar
+                value={categorySearch}
+                onChange={setCategorySearch}
+                onClear={clearFilters}
+                label={formatMessage({ id: 'ADMIN_SEARCH_CATEGORIES_LABEL' })}
+                hasActiveFilter={hasActiveFilter}
+              />
+              {/* Accessible equivalent of the bar chart's onBarClick above —
+               * a keyboard/screen-reader-usable way to jump straight to a
+               * given month's own page, same division of labor as
+               * PieChart's onSliceClick + the category list below. */}
+              <select
+                className={getClasses('month-jump')}
+                aria-label={formatMessage({ id: 'ADMIN_JUMP_TO_MONTH_LABEL' })}
+                value=""
+                onChange={(event) => {
+                  if (event.target.value) goToMonth(event.target.value);
+                }}
+              >
+                <option value="" disabled>
+                  {formatMessage({ id: 'ADMIN_JUMP_TO_MONTH_LABEL' })}
+                </option>
+                {[...year.monthlyTotals].reverse().map((entry) => (
+                  <option key={entry.month} value={entry.month}>
+                    {formatMonthLabel(entry.month, locale as Locale)}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {filteredCategories.length === 0 ? (
+              <p className={getClasses('empty-state')} role="status">
+                <FormattedMessage id="ADMIN_NO_MATCHING_CATEGORIES" />
+              </p>
+            ) : (
+              <ul className={getClasses('category-list')}>
+                {filteredCategories.map((category) => {
+                  const isActive = category.categoryId === activeCategoryId;
+                  return (
+                    <li key={category.categoryId}>
+                      <button
+                        type="button"
+                        className={getClasses('category-row', { active: isActive })}
+                        onClick={() => toggleCategory(category.categoryId)}
+                        aria-pressed={isActive}
+                      >
+                        <span
+                          className={getClasses('category-swatch')}
+                          style={{ backgroundColor: category.color }}
+                          aria-hidden="true"
+                        />
+                        <span className={getClasses('category-name')}>{category.label}</span>
+                        <span className={getClasses('category-total')}>
+                          {formatArs(category.total.ars)}
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
           </section>
         </>
       )}

@@ -1,22 +1,70 @@
-import type { LoaderFunctionArgs } from 'react-router';
-import { redirect } from 'react-router';
+import { FormattedMessage, useIntl } from 'react-intl';
+import type { MetaFunction } from 'react-router';
+import { Link, useLoaderData } from 'react-router';
 
-// Always redirects — there's no dashboard view of its own, just a
-// stable link target ("go to whatever month matters right now") per
-// docs/finance-frontend.md §2.
-export function loader({ request }: LoaderFunctionArgs) {
-  const now = new Date();
-  // UTC, not Argentina's ART (UTC-3) — this only decides which month's
-  // URL to land on, not any actual data bucketing (that's the backend's
-  // job, in ART, per finance-tracker-backend-kickoff.md Phase 2). Worst
-  // case near a month boundary: it lands one month off, trivially fixed
-  // with the month view's own prev/next controls.
-  const yyyyMm = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}`;
-  // Forward the query string (notably `?lang=`) — dropping it would
-  // silently revert an explicit language choice back to the cookie/
-  // Accept-Language default for anyone landing here directly (a
-  // bookmark, a shared link) rather than clicking through from a page
-  // that already resolved the locale.
-  const search = new URL(request.url).search;
-  return redirect(`/admin/month/${yyyyMm}${search}`);
+import Card from '~/components/Card';
+import type { Locale } from '~/intl';
+import { adminMeta } from '~/utils/admin-meta';
+import { formatArs } from '~/utils/format-money';
+import { formatMonthLabel } from '~/utils/format-month-label';
+import { getYearFixture } from '~/utils/get-year-fixture';
+import { getClassMaker } from '~/utils/utils';
+
+import styles from './style.css?url';
+
+export const links = () => [{ rel: 'stylesheet', href: styles }];
+
+export const meta: MetaFunction = () => adminMeta('Home — Admin');
+
+const BLOCK = 'admin-home-route';
+const getClasses = getClassMaker(BLOCK);
+
+// Home (docs/finance-frontend.md §13) — this year's months as a
+// tappable card grid, reusing the exact data `GET /api/years/{yyyy}`'s
+// `monthlyTotals` already returns. No new backend surface: Home for the
+// current year IS that year's `monthlyTotals`, read the same way the
+// yearly view already does.
+export async function loader() {
+  // UTC, not Argentina's ART (UTC-3) — this only decides which year's
+  // months to show, not any actual data bucketing (that's the
+  // backend's job, in ART, per finance-tracker-backend-kickoff.md
+  // Phase 2).
+  const year = new Date().getUTCFullYear();
+  const { monthlyTotals } = getYearFixture(year);
+  // Newest first — Home is a "what's the latest" browse menu, not a
+  // chronological read (§13).
+  return { year, months: [...monthlyTotals].reverse() };
+}
+
+export default function AdminHome() {
+  const { year, months } = useLoaderData<typeof loader>();
+  const { locale } = useIntl();
+
+  return (
+    <div className={getClasses()}>
+      {/* Bare year number, matching the yearly view's own <h1> — no
+       * "Current Year" label needed on top of it. */}
+      <h1 className={getClasses('title')}>{year}</h1>
+      {months.length === 0 ? (
+        <p className={getClasses('empty-state')} role="status">
+          <FormattedMessage id="ADMIN_HOME_EMPTY" />
+        </p>
+      ) : (
+        <div className={getClasses('list')}>
+          {months.map((entry) => (
+            <Link
+              key={entry.month}
+              to={`/admin/month/${entry.month}`}
+              className={getClasses('card-link')}
+            >
+              <Card
+                title={formatMonthLabel(entry.month, locale as Locale)}
+                texts={[formatArs(entry.total.ars)]}
+              />
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }

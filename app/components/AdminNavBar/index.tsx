@@ -42,6 +42,18 @@ export default function AdminNavBar() {
 
   return (
     <nav className={getClasses()} aria-label={formatMessage({ id: 'ADMIN_NAV_LABEL' })}>
+      {/* Avatar — desktop only, same as the public NavBar (no room for
+       * it in the mobile bottom bar). Placeholder until a real photo
+       * replaces this src. */}
+      <div className={getClasses('avatar-row')}>
+        <img
+          src="/assets/img/admin-avatar-placeholder.svg"
+          alt=""
+          width={64}
+          height={64}
+          className={getClasses('avatar')}
+        />
+      </div>
       <div className={getClasses('utility-row')}>
         <div className={getClasses('utility-slot')}>
           <ThemeToggle />

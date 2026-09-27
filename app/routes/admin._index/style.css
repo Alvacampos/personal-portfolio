@@ -5,7 +5,11 @@
   justify-content: center;
   text-align: center;
   gap: var(--space-16);
-  min-height: 60vh;
+  /* Full viewport minus the content wrapper's own top+bottom padding
+   * (`--space-16` each) — true centering, not just within an arbitrary
+   * fraction of the viewport. The login page renders no nav, so there's
+   * no rail/tab-bar height to also subtract. */
+  min-height: calc(100dvh - var(--space-32));
 }
 
 .admin-login-route__title {

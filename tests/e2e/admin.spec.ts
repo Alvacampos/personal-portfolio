@@ -9,16 +9,29 @@ test.describe('Admin login (/admin)', () => {
     await expect(page.getByRole('link', { name: /github profile/i })).toHaveCount(0);
   });
 
-  test('sign-in leads to the dashboard redirect', async ({ page }) => {
+  test('sign-in leads to Home', async ({ page }) => {
     await page.goto('/admin');
     await page.getByRole('link', { name: /sign in with google/i }).click();
-    await expect(page).toHaveURL(/\/admin\/month\/\d{4}-\d{2}$/);
+    await expect(page).toHaveURL('/admin/dashboard');
   });
 });
 
-test.describe('Admin dashboard (/admin/dashboard)', () => {
-  test('redirects to the current month', async ({ page }) => {
+test.describe('Admin Home (/admin/dashboard)', () => {
+  test('shows this year as a grid of month cards, newest first', async ({ page }) => {
     await page.goto('/admin/dashboard');
+    // Bare year number heading, matching the yearly view's own <h1>.
+    await expect(page.getByRole('heading', { name: /^\d{4}$/, level: 1 })).toBeVisible();
+    // Fixture-backed for the current year (docs/finance-frontend.md
+    // §12/§13) — like the month view's own populated-vs-empty fixture
+    // split, this degrades to the empty-state assertion below once the
+    // fixture year rolls past what admin-fixtures.ts covers.
+    const monthLinks = page.getByRole('link').filter({ hasText: /\d{4}/ });
+    await expect(monthLinks.first()).toBeVisible();
+  });
+
+  test('clicking a month card navigates to its month view', async ({ page }) => {
+    await page.goto('/admin/dashboard');
+    await page.getByRole('link').filter({ hasText: /\d{4}/ }).first().click();
     await expect(page).toHaveURL(/\/admin\/month\/\d{4}-\d{2}$/);
   });
 });
@@ -63,8 +76,8 @@ test.describe('Admin month view (/admin/month/:yyyyMm)', () => {
   test('renders the ErrorBoundary for a malformed month param', async ({ page }) => {
     await page.goto('/admin/month/not-a-month', { waitUntil: 'domcontentloaded' });
     await expect(page.getByText(/that month doesn't look right/i)).toBeVisible();
-    await page.getByRole('link', { name: /back to current month/i }).click();
-    await expect(page).toHaveURL(/\/admin\/month\/\d{4}-\d{2}$/);
+    await page.getByRole('link', { name: /back to home/i }).click();
+    await expect(page).toHaveURL('/admin/dashboard');
   });
 
   test('renders the pie chart with one slice per category', async ({ page }) => {
@@ -160,6 +173,25 @@ test.describe('Admin year view (/admin/year/:year)', () => {
     await expect(monthlyTable.getByText(/January 2025/i)).toBeAttached();
   });
 
+  test('clicking a bar navigates to that month’s own page', async ({ page }) => {
+    await page.goto('/admin/year/2025');
+    await page.waitForLoadState('networkidle');
+    // Bars render oldest-first (Jan..Dec) — the 3rd bar is March.
+    await page.locator('.recharts-bar-rectangle').nth(2).click({ force: true });
+    await expect(page).toHaveURL('/admin/month/2025-03');
+  });
+
+  test('the month dropdown is a keyboard-usable equivalent to clicking a bar', async ({ page }) => {
+    await page.goto('/admin/year/2025');
+    await page.waitForLoadState('networkidle');
+    // `.selectOption()` can otherwise race hydration on a freshly-loaded
+    // page and get silently ignored — same settle this suite's search
+    // tests already use for the same class of problem.
+    await page.waitForTimeout(200);
+    await page.selectOption('.admin-year-route__month-jump', '2025-03');
+    await expect(page).toHaveURL('/admin/month/2025-03');
+  });
+
   test('shows fewer bars for the partial (YTD) year', async ({ page }) => {
     await page.goto('/admin/year/2026');
     await page.waitForLoadState('networkidle');
@@ -194,6 +226,33 @@ test.describe('Admin year view (/admin/year/:year)', () => {
     await expect(page).toHaveURL('/admin/year/2025');
   });
 
+  test('searching categories narrows the list; clear filters resets search and isolation', async ({
+    page,
+  }) => {
+    await page.goto('/admin/year/2025');
+    await page.waitForLoadState('networkidle');
+    // `networkidle` doesn't guarantee hydration has attached React's
+    // input listeners yet — same settle this suite's visual spec uses,
+    // otherwise `.fill()` can race hydration and get silently
+    // overwritten by the not-yet-hydrated controlled input.
+    await page.waitForTimeout(200);
+    const clearFilters = page.getByRole('button', { name: /clear filters/i });
+    await expect(clearFilters).toBeDisabled();
+
+    await page.getByRole('searchbox', { name: /search categories/i }).fill('groc');
+    await expect(page.getByRole('button', { name: /Groceries/ })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Transport/ })).toHaveCount(0);
+    await expect(clearFilters).toBeEnabled();
+
+    await page.getByRole('button', { name: /Groceries/ }).click();
+    await expect(page.getByText('Showing Groceries only')).toBeVisible();
+
+    await clearFilters.click();
+    await expect(page.getByRole('searchbox', { name: /search categories/i })).toHaveValue('');
+    await expect(page.getByText(/Showing .* only/)).toHaveCount(0);
+    await expect(page.getByRole('button', { name: /Transport/ })).toBeVisible();
+  });
+
   test('renders the ErrorBoundary for a malformed year param', async ({ page }) => {
     await page.goto('/admin/year/not-a-year', { waitUntil: 'domcontentloaded' });
     await expect(page.getByText(/that year doesn't look right/i)).toBeVisible();
@@ -216,11 +275,49 @@ test.describe('Admin trips list (/admin/trips)', () => {
     );
   });
 
+  test('each card shows a status badge, duration, and a capitalized date range', async ({
+    page,
+  }) => {
+    await page.goto('/admin/trips');
+    const barilocheCard = page.getByRole('link', { name: /Bariloche/ });
+    // Jan 10 – Jan 17 inclusive is 8 calendar days (matches the 7-night
+    // hotel stay in the trip detail's own fixture transaction).
+    await expect(barilocheCard.getByText('Completed')).toBeVisible();
+    await expect(barilocheCard.getByText('8 days')).toBeVisible();
+    await expect(barilocheCard.getByText('Jan 10, 2026 – Jan 17, 2026')).toBeVisible();
+  });
+
   test('clicking a trip navigates to its detail page', async ({ page }) => {
     await page.goto('/admin/trips');
     await page.getByRole('link', { name: /Bariloche/ }).click();
     await expect(page).toHaveURL('/admin/trips/bariloche-2026-01');
     await expect(page.getByRole('heading', { name: 'Bariloche', level: 1 })).toBeVisible();
+  });
+
+  test('searching filters by trip name; clear filters resets it', async ({ page }) => {
+    await page.goto('/admin/trips');
+    await page.waitForLoadState('networkidle');
+    // See the equivalent wait in the Year search test — `.fill()` can
+    // otherwise race hydration and get silently discarded.
+    await page.waitForTimeout(200);
+    const clearFilters = page.getByRole('button', { name: /clear filters/i });
+    await expect(clearFilters).toBeDisabled();
+
+    await page.getByRole('searchbox', { name: /search trips/i }).fill('bariloche');
+    await expect(page.getByRole('link', { name: /Bariloche/ })).toBeVisible();
+    await expect(page.getByRole('link', { name: /Cataratas del Iguazú/ })).toHaveCount(0);
+
+    await clearFilters.click();
+    await expect(page.getByRole('searchbox', { name: /search trips/i })).toHaveValue('');
+    await expect(page.getByRole('link', { name: /Cataratas del Iguazú/ })).toBeVisible();
+  });
+
+  test('shows a no-match message when the search matches no trip', async ({ page }) => {
+    await page.goto('/admin/trips');
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(200);
+    await page.getByRole('searchbox', { name: /search trips/i }).fill('nonexistent trip');
+    await expect(page.getByText(/no trips match your search/i)).toBeVisible();
   });
 });
 

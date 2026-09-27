@@ -1,4 +1,5 @@
 @import '../../components/Card/style.css';
+@import '../../components/SearchFilterBar/style.css';
 
 .admin-trips-route {
   display: flex;
@@ -31,4 +32,52 @@
    * padding already clears this comfortably, this is just a floor. */
   display: block;
   min-height: 44px;
+}
+
+.admin-trips-route__badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+  margin-bottom: var(--space-12);
+}
+
+.admin-trips-route__badge {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-4) var(--space-12);
+  border-radius: var(--border-10);
+  font-size: var(--font-12);
+  font-weight: var(--weight-700);
+}
+
+/* Compound selectors, not `.admin-trips-route__badge--completed` etc. —
+ * getClassMaker's object-modifier form attaches the modifier to the
+ * bare block, not the element (TECH-DEBT.md T19). Completed and the
+ * duration badge share the same neutral treatment — neither is a
+ * call-to-action, unlike planned/active. */
+.admin-trips-route__badge.admin-trips-route--completed,
+.admin-trips-route__badge.admin-trips-route--duration {
+  background: var(--bg-elevated);
+  color: var(--fg-muted);
+}
+
+.admin-trips-route__badge.admin-trips-route--planned {
+  background: var(--accent-muted);
+  color: var(--accent-on-muted);
+}
+
+.admin-trips-route__badge.admin-trips-route--active {
+  background: var(--accent);
+  color: var(--fg-on-accent);
+}
+
+.admin-trips-route__date-range {
+  color: var(--fg-muted);
+  margin: 0 0 var(--space-8);
+}
+
+.admin-trips-route__total {
+  font-size: var(--font-20);
+  font-weight: var(--weight-700);
+  margin: 0;
 }

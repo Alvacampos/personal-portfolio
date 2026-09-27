@@ -17,6 +17,7 @@ import NavBar from '~/components/NavBar';
 import PendingBoundary from '~/components/PendingBoundary';
 import { type Locale, messagesFor, pickLocale } from '~/intl';
 import styles from '~/styles/style.css?url';
+import { isAdminPath } from '~/utils/is-admin-path';
 import { useNonce } from '~/utils/nonce-context';
 import { getClassMaker } from '~/utils/utils';
 
@@ -169,6 +170,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
   // Skip-link is rendered outside the IntlProvider scope, hence the
   // direct lookup instead of <FormattedMessage>.
   const skipLinkLabel = messagesFor(locale).SKIP_TO_CONTENT;
+  // /admin never renders the public NavBar (see `App` below) — without
+  // this, body's desktop `padding-left` (reserved for that NavBar's
+  // fixed rail) still applied on every /admin page even though
+  // AdminNavBar manages its own clearance independently, doubling up
+  // dead space on the left of every admin route.
+  const { pathname } = useLocation();
+  const isAdmin = isAdminPath(pathname);
 
   return (
     // suppressHydrationWarning: THEME_INIT_SCRIPT sets `<html data-theme>`
@@ -189,7 +197,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           dangerouslySetInnerHTML={{ __html: jsonLd(JSONLD_GRAPH) }}
         />
       </head>
-      <body className={getClasses()}>
+      <body className={getClasses('', { admin: isAdmin })}>
         <a href="#main-content" className={getClasses('skip-link')}>
           {skipLinkLabel}
         </a>
@@ -207,7 +215,7 @@ export default function App() {
   // (docs/finance-frontend.md §1) — the public NavBar (GitHub/Contact/
   // etc.) doesn't belong there.
   const { pathname } = useLocation();
-  const isAdmin = pathname === '/admin' || pathname.startsWith('/admin/');
+  const isAdmin = isAdminPath(pathname);
   return (
     <IntlProvider messages={messagesFor(locale)} locale={locale} defaultLocale="en">
       {!isAdmin && <NavBar />}

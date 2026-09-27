@@ -21,6 +21,7 @@ const ROUTES = [
   // /admin holds the same accessibility bar as the public site
   // (docs/finance-frontend.md §10), not a lower private-tool one.
   { name: 'admin-login', path: '/admin' },
+  { name: 'admin-home', path: '/admin/dashboard' },
   { name: 'admin-month', path: '/admin/month/2026-08' },
   { name: 'admin-year', path: '/admin/year/2025' },
   { name: 'admin-trips-index', path: '/admin/trips' },

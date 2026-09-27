@@ -13,13 +13,13 @@ describe('formatDateRange', () => {
     expect(formatDateRange('2026-01-10', null, 'en', 'ongoing')).toBe('Jan 10, 2026 — ongoing');
   });
 
-  it('formats month names in Spanish when given the es locale', () => {
+  it('formats month names in Spanish when given the es locale, capitalized', () => {
     expect(formatDateRange('2026-01-10', '2026-01-17', 'es', 'en curso')).toBe(
-      'ene 10, 2026 – ene 17, 2026'
+      'Ene 10, 2026 – Ene 17, 2026'
     );
   });
 
   it('uses the given ongoing label for an open-ended Spanish range', () => {
-    expect(formatDateRange('2026-01-10', null, 'es', 'en curso')).toBe('ene 10, 2026 — en curso');
+    expect(formatDateRange('2026-01-10', null, 'es', 'en curso')).toBe('Ene 10, 2026 — en curso');
   });
 });

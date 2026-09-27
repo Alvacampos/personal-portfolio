@@ -465,6 +465,12 @@ Found 2026-09-27 while building `/admin`'s nav. `getClassMaker(block)(element, {
 
 Not fixed here — `/admin`'s own six occurrences (introduced across Phases A/B/D/F/G) were fixed in place with compound selectors (`.block__element.block--modifier`) rather than changing the utility, since `getClassMaker` is used everywhere and changing its behavior risks unrelated breakage across the whole public site. `Input`'s occurrence is still broken and deserves its own fix — either the same compound-selector treatment, or fixing `getClassMaker` itself (bigger: would need auditing every existing `--modifier` CSS selector in the codebase for ones that already, coincidentally, rely on the current block-only behavior).
 
+### T20 — Public `NavBar`'s active nav-link overflows its rail, masked by `overflow: hidden` (P3)
+
+Found 2026-09-27 while fixing the identical bug in `/admin`'s own nav (`AdminNavBar`, copied from this component's structure): `.navbar-component__nav-link` sets `width: 100%` and, at `$bp-md`+, adds horizontal padding (`padding: 0 var(--space-12)`) with no `box-sizing: border-box` — the active link measures 224px in a 201px-wide rail (confirmed via `getBoundingClientRect()`), a real 24px overflow, not just a visual nit. It's invisible in practice because `.navbar-component` already has `overflow: hidden` for an unrelated reason (its own comment: "Stop hover/focus pills from overflowing the rail's right edge") — that same property happens to clip this overflow too, by coincidence rather than by design.
+
+Not fixed here — this is the live public site, out of scope for the `/admin`-focused work that surfaced it, and the current behavior is harmless (nothing visibly breaks, `overflow: hidden` already contains it). The actual fix, if ever done, is the same one applied to `AdminNavBar`: add `box-sizing: border-box` to `.navbar-component__nav-link` so `width: 100%` correctly includes the padding instead of adding to it.
+
 ---
 
 ## 2. Cleanup / data / docs

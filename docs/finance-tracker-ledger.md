@@ -47,8 +47,8 @@
 | Phase D — Yearly view                   | done   | Bar chart + same pie/category isolate pattern as month view, e2e-covered. Same-year-over-year comparison remains a fast-follow, not v1.                                                                   |
 | Phase E — Claude analysis section       | open   | Blocked on backend Phase 4C.                                                                                                                                                                              |
 | Phase F — Vacations                     | done   | Trips list + detail (pie/category isolate, no analysis), e2e-covered. Trip/status/budget schema promoted from "future, not v1" to real endpoints — planning UI still deliberately deferred (frontend §6). |
-| Phase G — Portfolio-parity chrome       | open   | `AdminNavBar` (side rail desktop / bottom tabs mobile) + react-intl retrofit of Phases A–F. Blocks H/I/J.                                                                                                 |
-| Phase H — Home                          | open   | Repurposes `/admin/dashboard` into a real landing page (frontend §13).                                                                                                                                    |
+| Phase G — Portfolio-parity chrome       | done   | `AdminNavBar` (side rail desktop / bottom tabs mobile) + react-intl retrofit of Phases A–F, e2e + a11y-covered. PR #334.                                                                                  |
+| Phase H — Home                          | done   | Repurposes `/admin/dashboard` into a real landing page — this year's months as cards, newest first, `getYearFixture` shared with the yearly view (frontend §13). e2e + a11y-covered.                      |
 | Phase I — Calendar                      | open   | New section (frontend §14) — no new backend surface needed.                                                                                                                                               |
 | Phase J — Vacation planning UI          | open   | Decided: read-only planned-vs-actual (frontend §6) — `budget` shown alongside actual total, no write endpoints/forms.                                                                                     |
 
@@ -57,6 +57,194 @@
 Newest first. Each entry: what was decided or tried, and why — especially
 the "we tried X and backed out" entries, which are the ones worth having a
 record of.
+
+### 2026-09-27 — Year view: click-to-month, resolved via a genuine fork
+
+"Selecting a month should autofilter by that month" had two materially
+different readings: navigate to that month's own page (which already
+has the full category/transaction breakdown), or isolate in place on
+the Year page (which can't actually work — `YearResponse.categories`
+is a year-wide aggregate with no per-month breakdown in the schema,
+so there's nothing to filter the category list _with_). Asked rather
+than guessed, since building the wrong one meant either a wasted
+schema change or a half-working feature that looks like it filters but
+doesn't. **Decided: navigate.**
+
+Implemented as two ways to trigger the same navigation, mirroring
+PieChart's existing onSliceClick + category-list division of labor:
+`BarChart` gained an `onBarClick` prop (mouse/touch only, chart stays
+`aria-hidden`) and a new "Jump to month" `<select>` next to the
+category search bar serves as the keyboard/screen-reader-usable
+equivalent — not optional decoration, the actual accessible path to
+the same action. Both call the same `goToMonth` navigating to
+`/admin/month/:yyyyMm`.
+
+### 2026-09-27 — Trip cards: status + duration badges, capitalized dates
+
+The trips list cards showed only a name, date range, and total —
+`TripSummary.status` (`planned`/`active`/`completed`) has existed in the
+schema since Phase F but was never actually surfaced anywhere in the UI.
+Added a badge row to each card: a status badge (reusing the existing
+`ADMIN_TRIP_ONGOING` key for `active`, since that's the same "still
+happening" concept the date range's open-ended suffix already uses —
+not a separate, redundant key) and a computed duration badge ("8 days"
+for Bariloche's Jan 10–17 trip — inclusive day count, matching the 7
+_nights_ in its own fixture transaction). Card markup switched from
+`Card`'s `texts` prop to `children` to fit the badge row in.
+
+Also fixed: date ranges rendered with lowercase month abbreviations
+under Spanish ("ene 10, 2026") — correct running-prose Spanish, but a
+date range standing alone in a card reads as a label, not a sentence,
+so it wants the same capitalized look English gets for free ("Jan").
+`formatDateRange` now capitalizes both formatted date pieces
+regardless of locale.
+
+### 2026-09-27 — A fifth `width: 100%` overflow, plus two copy fixes
+
+A follow-up round of screenshots (same DevTools-inspection method as the
+entry below) found one more instance of the exact overflow pattern the
+previous entry describes, in a different element:
+`admin-nav-bar__nav-link`'s active state measured 240×40 in a 200px-wide
+rail — `width: 100%` (of the `<li>`) plus the desktop rule's `padding:
+12px 20px` (content-box, `<a>` tags don't get border-box by default)
+added up to 40px over. First fix attempt dropped the redundant
+`width: 100%` (mirroring the `admin-layout__content` fix) — this
+compiled, typechecked, and looked right on desktop, but silently broke
+mobile: every tab collapsed to its own text width and left-aligned
+instead of centering in its column (caught in the very next screenshot
+round, not by test coverage). Root cause: at mobile the parent `<li>`
+is `display: flex`, making this link a flex **item**, whose main-axis
+size defaults to content-size absent an explicit width — unlike a
+plain block box (the desktop case), which defaults to filling its
+container. The actual fix needed both together: `width: 100%` restored
+_and_ `box-sizing: border-box` added, so the desktop padding is
+subtracted from the 100% instead of added on top, while mobile (zero
+horizontal padding there) is unaffected either way.
+
+Checked the rest of the admin CSS proactively for the same shape after
+finding this a second time — three other `width: 100%` + padding
+combinations exist (the category-row buttons in month/year/trip
+detail), but those are `<button>` elements, which get `box-sizing:
+border-box` from the browser's default UA stylesheet, so they were
+never actually at risk. Confirmed empirically (computed `box-sizing:
+border-box` on one), not just assumed. Also checked whether the public
+`NavBar` (the pattern `AdminNavBar` was copied from) has the identical
+bug — it does (224px in a 201px rail), but it's invisibly masked by
+`overflow: hidden` on `.navbar-component` (there for an unrelated
+reason). Logged as TECH-DEBT T20, not fixed — out of scope on the live
+public site.
+
+Two copy fixes from the same review round:
+
+- `ADMIN_CATEGORY_RENT_EXPENSAS` mixed languages under English
+  ("Rent / Expensas") — the "Expensas" half only made sense as a
+  deliberate ARS-locale term when the whole label was Spanish. Split to
+  clean single-language labels: "Rent" (en) / "Alquiler" (es). The
+  `rent_expensas` category id itself is unchanged — this only affects
+  the two display strings.
+- Home's heading dropped "Current Year"/"This year" entirely in favor
+  of just the bare current year number, matching the yearly view's own
+  `<h1>` exactly (`ADMIN_HOME_HEADING` removed from both intl files as
+  now-unused). Simpler than solving the capitalization question the
+  English/Spanish title-case mismatch had raised.
+
+### 2026-09-27 — Real-browser review of PR #335 surfaced four root causes
+
+Screenshots + DevTools inspection against the running `admin/phase-h-home`
+branch (Chrome device-toolbar emulation, not just a resize) surfaced
+several visual bugs the CI suite hadn't caught — all four traced back to
+distinct root causes, not one bug wearing four costumes:
+
+- **`/admin`'s mobile layout was silently rendering as desktop.** Every
+  admin route's `meta()` returned a bare `[{ title }]`, and React Router
+  doesn't merge a route's meta with its ancestors' by default — that
+  silently dropped root's `<meta name="viewport">` tag too. Without it,
+  a real phone (and Chrome's device-toolbar emulation, which honors the
+  tag) falls back to a ~980px desktop layout viewport regardless of the
+  device's actual width, so every `$bp-md` media query read "desktop."
+  Fixed with a shared `adminMeta(title)` helper
+  (`app/utils/admin-meta.ts`) every admin route now calls instead of
+  returning a bare title array.
+- **The public site's `body { padding-left: 200px }` (reserved for the
+  public NavBar's desktop rail) applied unconditionally, including on
+  `/admin`, which never renders that NavBar.** `AdminNavBar` is
+  `position: fixed` and reserves its own clearance independently via
+  `admin/style.css`, so this was 200px of pure dead space stacked on top
+  of that on _every_ admin page, not just the login page (where it was
+  most visible as an off-center panel). Fixed by giving `<body>` a
+  `root--admin` modifier (computed once in `is-admin-path.ts`, shared
+  between `root.tsx`'s `Layout` and `App`) and scoping the padding-left
+  rule to skip it.
+- **`admin-layout__content`'s explicit `width: 100%` overflowed its
+  parent on mobile** once combined with `padding` in default
+  content-box sizing (100% of the container, plus padding on top, is
+  wider than the container — clipped content on the right edge). First
+  fix attempt added `box-sizing: border-box`, which stopped the
+  overflow but silently shrank the desktop reading column (the
+  `max-width: 1024px` cap now included the nav-clearance
+  `padding-left`, so the actual content area became ~800px instead of
+  1024px — only caught by testing a genuinely wide viewport during the
+  adversarial-review pass, since it wasn't visible at 1280px). The
+  actual fix: just remove `width: 100%`. A block element's default
+  `auto` width already fills the container exactly, subtracting
+  padding as part of what "auto" means — the explicit `width: 100%`
+  was both unnecessary and the real cause, and removing it fixes the
+  overflow without touching how `max-width` interacts with padding.
+- **The sign-out button's restyle (bordered pill, more padding) made the
+  mobile fixed nav taller** without a matching bump to the content
+  wrapper's bottom clearance — Playwright's mobile suite caught this for
+  real (a category button was unclickable, covered by the fixed nav).
+  Padding bumped to match the nav's measured height with a buffer.
+
+Also fixed in the same pass, not root-cause bugs but real gaps: category
+names (`Groceries`, `Rent / Expensas`, etc.) were never translated —
+added a categoryId→label map (`get-category-label.ts`) since the six
+categories are a fixed, developer-controlled taxonomy (unlike a
+transaction's free-text description), not a wire-schema concern; Home's
+heading changed from "This year" to "Current Year"; the sign-out link
+got real button styling; a `SearchFilterBar` component was added to the
+Year (searches categories) and Trips (searches by name) views, each with
+a "Clear filters" button that resets both the search text and any
+isolated category/trip.
+
+One test-writing lesson worth keeping: two new Playwright tests
+(category search, trip search) failed on the very first run every time
+and passed instantly on retry — not the known Vite-cold-compile
+flakiness this suite already has elsewhere, but `.fill()` racing
+hydration on a freshly-loaded page. Fixed with the same `networkidle` +
+short settle this suite's visual spec already uses for the same class of
+problem, not a blind retry-and-hope.
+
+### 2026-09-27 — Phase G merged (PR #334); Phase H (Home) built and shipped
+
+Phase G's own build surfaced two loose ends beyond the nav/i18n retrofit
+itself, both fixed before opening the PR:
+
+- `BarChart` and `formatDateRange` both gained a required `locale` (and,
+  for the latter, `ongoingLabel`) parameter as part of the retrofit, but
+  their callers in `admin.year.$year` and both trip routes weren't
+  updated in the same pass — the repo didn't typecheck for a stretch.
+  Fixed by threading `locale` through every remaining call site.
+- The admin intl JSON used curly `'` apostrophes in three error-title
+  strings (copied from habit, not from the existing convention); the
+  public site's `en-US.json` uses straight `'` throughout. Caught by the
+  e2e suite (`admin.spec.ts`'s regexes expect straight quotes), not by
+  eye — a reminder that "looks right" and "matches the file's actual
+  bytes" aren't the same check.
+
+Phase H (Home) followed immediately on a fresh branch off the merged
+`main`: `/admin/dashboard` is now a real landing page — the current
+year's `monthlyTotals` (same fixture `getYearFixture` reads for the
+yearly view, extracted to `app/utils/get-year-fixture.ts` rather than
+duplicated) as a tappable card grid, newest first, per frontend §13.
+`formatMonthLabel` was also extracted (`app/utils/format-month-label.ts`)
+once Home became its third identical call site alongside month/year.
+
+One knock-on fix: the month view's `ErrorBoundary` used to link back to
+`/admin/dashboard` under the label "Back to current month" — accurate
+when that route redirected to the current month, wrong now that it's
+Home. Relabeled to "Back to Home" (`ADMIN_BACK_TO_HOME`), caught by the
+e2e suite's now-stale assertion rather than by inspection.
 
 ### 2026-09-27 — Two decisions reversed, two sections added, one fork reopened
 
