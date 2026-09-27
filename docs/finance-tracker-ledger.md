@@ -47,12 +47,55 @@
 | Phase D — Yearly view                   | done   | Bar chart + same pie/category isolate pattern as month view, e2e-covered. Same-year-over-year comparison remains a fast-follow, not v1.                                                                   |
 | Phase E — Claude analysis section       | open   | Blocked on backend Phase 4C.                                                                                                                                                                              |
 | Phase F — Vacations                     | done   | Trips list + detail (pie/category isolate, no analysis), e2e-covered. Trip/status/budget schema promoted from "future, not v1" to real endpoints — planning UI still deliberately deferred (frontend §6). |
+| Phase G — Portfolio-parity chrome       | open   | `AdminNavBar` (side rail desktop / bottom tabs mobile) + react-intl retrofit of Phases A–F. Blocks H/I/J.                                                                                                 |
+| Phase H — Home                          | open   | Repurposes `/admin/dashboard` into a real landing page (frontend §13).                                                                                                                                    |
+| Phase I — Calendar                      | open   | New section (frontend §14) — no new backend surface needed.                                                                                                                                               |
+| Phase J — Vacation planning UI          | open   | Scope depends entirely on the reopened write-vs-read-only question (frontend §6/§11).                                                                                                                     |
 
 ## Decision log
 
 Newest first. Each entry: what was decided or tried, and why — especially
 the "we tried X and backed out" entries, which are the ones worth having a
 record of.
+
+### 2026-09-27 — Two decisions reversed, two sections added, one fork reopened
+
+After Phase F merged, its real pages got compared side by side against
+the public site for the first time — that surfaced gaps neither the
+original brief nor the adversarial-review pass caught, since there was no
+actual screen to look at yet when those were written.
+
+- **Reversed: `react-intl` is back in scope for `/admin`.** The original
+  reasoning (an audience of two people who both speak Spanish, so
+  translating is overhead with no one to serve) wasn't wrong about the
+  audience, but explicit direction ("this app needs to support spanish,
+  very similar to the portfolio app") makes match-the-portfolio
+  consistency the deciding factor instead. Real, scoped work — 10 route/
+  component files to retrofit, comparable to the public site's existing
+  99-key intl files.
+- **Reversed: `/admin` needs the portfolio's actual responsive nav
+  shape** (fixed side rail desktop / bottom tab bar mobile,
+  `app/components/NavBar/`'s pattern), not the flat top bar Phase A
+  actually built. The original plan's "own small nav, not the public
+  NavBar" call was right about content, just under-specified about
+  layout — a new `AdminNavBar` component reuses the same `$bp-*`
+  breakpoint tokens and responsive skeleton, with admin-only content.
+- **Two new sections designed**: Home (`/admin/dashboard` repurposed from
+  a redirect into a real landing page — this year's months as cards,
+  reusing `GET /api/years/{yyyy}`'s existing `monthlyTotals`, no new
+  backend endpoint) and Calendar (a new day-by-day view of a month,
+  fully derivable from data `GET /api/months/{yyyy-mm}` already returns
+  via each transaction's `occurredOn`). Full designs in
+  finance-frontend.md §13/§14.
+- **Reopened, not decided**: "plan/add vacation expenses" could mean a
+  read-only planned-vs-actual view (the trip's existing `budget` column
+  displayed, real entries still Telegram-only) or a real write UI on the
+  frontend — a genuine, much bigger exception to the write-boundary
+  principle than the already-approved "Regenerate analysis" button.
+  Asked directly rather than assumed; answer pending.
+- New phases recorded: G (the two reversals — blocks everything else,
+  since H/I/J all render inside whatever nav Phase G builds), H (Home),
+  I (Calendar), J (vacation planning, shape TBD by the reopened question).
 
 ### 2026-09-26 — PR #333 adversarially reviewed: DRY fixes + a copy fix
 
