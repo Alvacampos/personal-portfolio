@@ -18,9 +18,9 @@
   margin: 0 auto;
   /* Clears the fixed bottom tab bar (mobile) — not derived from a
    * shared token since AdminNavBar's own height isn't exposed as one;
-   * measured at ~132px (utility row + nav links + bordered sign-out
-   * button) with a buffer on top, not exact-to-the-pixel. */
-  padding-bottom: calc(var(--space-80) + var(--space-72));
+   * measured at 80px (utility row + nav links, no sign-out button
+   * anymore) with a buffer on top, not exact-to-the-pixel. */
+  padding-bottom: calc(var(--space-80) + var(--space-16));
 }
 
 /* Compound selector, not `.admin-layout__content--no-nav` — getClassMaker's

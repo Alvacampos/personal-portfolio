@@ -51,10 +51,12 @@ under-shot what "keep the core style" should have meant:
   layout (`app/components/NavBar/`, driven by the `$bp-*` breakpoint
   tokens), not just its color palette. `/admin` reuses that exact
   responsive layout pattern and the same breakpoint tokens, with its own
-  content (Home / Year / Trips / Calendar + theme and locale toggles +
-  sign-out) — a new `AdminNavBar` component, not `NavBar` itself (still
-  no GitHub/Contact/CV items; the two navs share a layout skeleton, not a
-  component). See Phase G in §12.
+  content (Home / Year / Trips / Calendar + theme and locale toggles) —
+  a new `AdminNavBar` component, not `NavBar` itself (still no
+  GitHub/Contact/CV items; the two navs share a layout skeleton, not a
+  component). See Phase G in §12. **The sign-out link Phase G originally
+  shipped here was removed later** — see the note after §12's Phase G
+  bullet for why.
 
 Keep, unchanged: dark/light theming (free via existing CSS custom
 properties, and genuinely useful for checking finances at night), `Card`,
@@ -349,9 +351,15 @@ as Phase J — vacation planning is a read-only planned-vs-actual view, not
 a write UI (§6, §12). Reopened again, narrowly, after Phase J shipped: a
 trip's `budget` alone doesn't let you actually plan one out line by line,
 so Phase K adds manual planned-item entry — a deliberate, scoped
-exception to the read-only principle, not a reversal of it (§6, §15). No
-open forks remain in this doc; new ones that come up during
-implementation get added here rather than decided silently.
+exception to the read-only principle, not a reversal of it (§6, §15).
+Two more surfaced from an adversarial review of the shipped admin
+section: Home and Year's overlap for the current year, resolved by
+linking one to the other rather than merging or deleting either (§13);
+and Phase G's sign-out link, removed — the two of you are the entire
+userbase on your own devices, so real sign-out now only happens via
+session expiration, not a frontend control (§1, §12). No open forks
+remain in this doc; new ones that come up during implementation get
+added here rather than decided silently.
 
 ---
 
@@ -397,6 +405,14 @@ public site (§1's reversals):
   so an admin-only key never accidentally ships in the public bundle's
   message file). Blocks every phase below — they'd otherwise all need
   their own nav update.
+  **Reversed later: the sign-out link was removed.** The two of you are
+  the entire userbase, on your own devices — you'll close the app, not
+  sign out of it, so a manual sign-out control has no real user behind
+  it. Real sign-out now only happens organically, via the backend's
+  short-lived session token expiring (`finance-tracker-backend-kickoff.md`
+  §5) — not a frontend affordance at all, deliberately, not an
+  oversight. No backend contract change either: a logout endpoint was
+  never planned in §6 to begin with.
 - **Phase H — Home.** Repurposes `/admin/dashboard` from "redirect to
   current month" into an actual page (§13).
 - **Phase I — Calendar.** New section (§14), built entirely from data the
@@ -444,6 +460,21 @@ browsable whole.
   Phase G (§12). The month-view-specific prev/next month arrows stay on
   the month view itself; Home doesn't need them, it already shows every
   month in the year at once.
+- **Heading is "Overview," not the bare year number.** Originally just
+  the year (matching the yearly view's own `<h1>`), which gave zero
+  on-page confirmation you were on "Home" specifically. The year now
+  sits underneath as a subtitle instead of standing in for the page's
+  own name.
+- **Links to `/admin/year/:year` ("View year in detail").** An
+  adversarial review of the shipped admin section found a real overlap:
+  for the current year, Home and Year both browse the exact same
+  months, with no affordance explaining why you'd pick one over the
+  other. Resolved by keeping both — Home stays the fast tap-a-month
+  menu (bigger targets, no chart, true to its original "browsable
+  whole" reasoning above), Year stays where the deeper breakdown
+  (chart, categories, other years) lives — and adding an explicit,
+  one-tap bridge from one to the other rather than either duplicating
+  the other's content or deleting a deliberately-designed screen.
 
 ---
 

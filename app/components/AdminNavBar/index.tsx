@@ -76,11 +76,6 @@ export default function AdminNavBar() {
             );
           })}
         </ul>
-        {/* No real session yet (Phase C) — this just returns to the
-         * login screen rather than actually invalidating anything. */}
-        <Link to="/admin" className={getClasses('sign-out')}>
-          <FormattedMessage id="ADMIN_NAV_SIGN_OUT" />
-        </Link>
       </div>
     </nav>
   );

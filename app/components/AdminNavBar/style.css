@@ -106,31 +106,6 @@
   font-weight: var(--weight-700);
 }
 
-.admin-nav-bar__sign-out {
-  display: block;
-  text-align: center;
-  margin: var(--space-8) var(--space-16) var(--space-12);
-  padding: var(--space-8) 0;
-  border: 1px solid var(--border-default);
-  border-radius: var(--border-6);
-  color: var(--fg-muted);
-  font-size: var(--font-12);
-  font-weight: var(--weight-700);
-  text-decoration: none;
-  transition:
-    color 120ms ease,
-    background 120ms ease,
-    border-color 120ms ease;
-}
-
-.admin-nav-bar__sign-out:hover,
-.admin-nav-bar__sign-out:focus-visible {
-  color: var(--fg-on-accent);
-  background: var(--accent);
-  border-color: var(--accent);
-  outline: none;
-}
-
 @media screen and (min-width: $bp-md) {
   .admin-nav-bar {
     inset: 0 auto auto 0;

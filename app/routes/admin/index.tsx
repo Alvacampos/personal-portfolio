@@ -28,7 +28,7 @@ export default function AdminLayout() {
   const { locale } = useLoaderData<typeof loader>();
   const { pathname } = useLocation();
   // The login screen (exactly `/admin`) has nothing to navigate to yet —
-  // no session, no sign-out — so it renders without the chrome below.
+  // no session — so it renders without the chrome below.
   const isLoginPage = pathname === '/admin';
 
   return (
