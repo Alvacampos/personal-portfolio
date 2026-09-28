@@ -1,17 +1,19 @@
 # Admin section review — 2026-09-27
 
-> Tracking notes only — not committed, not linked from AGENTS.md or the
-> ledger. Written after Phases A–J shipped (Phase J merged same day as
-> this review), covering every route under `/admin` against fixtures.
-> Method: read every route's code, browsed all sections in a real
-> browser (light/dark, desktop/mobile, EN/ES), and reproduced the two
-> bugs below live rather than inferring them from a screenshot.
+> Tracking notes — committed (PR #341) so they stay in the repo, but not
+> linked from AGENTS.md or the ledger's own doc index. Written after
+> Phases A–J shipped (Phase J merged same day as this review), covering
+> every route under `/admin` against fixtures. Method: read every
+> route's code, browsed all sections in a real browser (light/dark,
+> desktop/mobile, EN/ES), and reproduced the two bugs below live rather
+> than inferring them from a screenshot.
 >
-> **Status update (same day):** Bugs A and C, the calendar legend/a11y
-> gap (Q5), and the Home heading (Q3) are fixed — PR #341
-> (`admin/phase-k-design-and-review-fixes`), not yet merged. Phase K is
-> designed (`finance-frontend.md` §15). Bug B is left alone, per this
-> doc's own call. **Q6/Q7 correction below**: this review initially
+> **Status update:** Bugs A and C, the calendar legend/a11y gap (Q5),
+> the Home heading (Q3), and Phase K (design + shipped UI) all landed in
+> PR #341 (merged). The Q1 Home/Year overlap was resolved separately —
+> Home links to Year now rather than either duplicating or replacing
+> the other (`finance-frontend.md` §13). Bug B is left alone, per this
+> doc's own call. **Q6/Q7 correction**: this review initially
 > mischaracterized who-owes-whom settlement as an overlooked gap — it's
 > actually an explicit, already-recorded non-goal (`finance-tracker.md`
 > §"Non-goals for v1": "shared-pot tracker, not a splitter"). Caught
@@ -38,12 +40,16 @@ once you've learned one screen you've learned all of them.
 
 ### 1. Are functionalities correctly grouped by sections?
 
-Mostly — one real overlap. **Home and Year duplicate each other for the
-current year.** Home is "this year's months as cards"; Year is "this
-year's months as a bar chart + categories + jump-to-month," which is a
-strict superset for the current year. There's no affordance explaining
-_why_ you'd pick one over the other, and Home can never show a past
-year the way Year can.
+Mostly — one real overlap, now resolved. **Home and Year duplicate each
+other for the current year.** Home is "this year's months as cards";
+Year is "this year's months as a bar chart + categories +
+jump-to-month," which is a strict superset for the current year. There
+was no affordance explaining _why_ you'd pick one over the other, and
+Home can never show a past year the way Year can. **Fix**: kept both
+(Home's fast tap-a-month menu is real, deliberate UX, not redundant on
+its own terms) and added an explicit "View year in detail" link from
+Home to Year, rather than merging or deleting a screen
+(`finance-frontend.md` §13).
 
 ### 2. Are the functionalities useful?
 

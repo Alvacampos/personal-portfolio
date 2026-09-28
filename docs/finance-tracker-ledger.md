@@ -59,6 +59,38 @@ Newest first. Each entry: what was decided or tried, and why — especially
 the "we tried X and backed out" entries, which are the ones worth having a
 record of.
 
+### 2026-09-28 — Home/Year overlap resolved; sign-out link removed
+
+Two small, unrelated fixes done together in one pass.
+
+**Home/Year overlap (Q1 of the admin review).** Considered three
+options: delete Home and make Year the landing page, redesign Home
+into a genuine cross-section dashboard, or keep both and make the
+difference discoverable. Picked the third — Home's "big tappable
+month cards, newest first" was a deliberate, reasoned design (frontend
+§13's original text: "a browsable whole," "a menu, not a second place
+that duplicates the month view's own content"), and deleting it would
+throw that away to fix what's actually a wayfinding problem, not a
+redundancy problem. A dashboard redesign was rejected as overreach for
+what the review actually found — most of the signals a real dashboard
+would want (uncategorized-transaction counts, etc.) don't exist
+without backend work not yet built. Shipped: a "View year in detail"
+link from Home to `/admin/year/:year`, plus the year subtitle now
+lives in its own `<header>` block so the link sits close to it instead
+of drifting toward the month-card grid's own spacing.
+
+**Sign-out link removed from `AdminNavBar`.** The userbase is exactly
+two people, on their own devices — closing the app _is_ signing out,
+in practice, and a manual control for that has no real user behind
+it. Real sign-out now only happens organically, when the backend's
+short-lived session token expires (`finance-tracker-backend-kickoff.md`
+§5) — deliberately not a frontend affordance at all. No backend
+contract change: a logout endpoint was never in §6's plan to begin
+with, so nothing is being removed there, just never added on this
+side. Re-measured the mobile fixed-nav's actual height after removing
+it (132px → 80px) and brought the content wrapper's bottom-clearance
+padding down to match, rather than leaving stale over-padding.
+
 ### 2026-09-27 — Phase K shipped: manual planned line items on the trip detail view
 
 Built the same day the design was written (frontend §15), against

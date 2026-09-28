@@ -36,6 +36,22 @@ test.describe('Admin Home (/admin/dashboard)', () => {
     await page.getByRole('link').filter({ hasText: /\d{4}/ }).first().click();
     await expect(page).toHaveURL(/\/admin\/month\/\d{4}-\d{2}$/);
   });
+
+  test('links to the full year view, resolving the overlap with Year', async ({ page }) => {
+    await page.goto('/admin/dashboard');
+    await page.getByRole('link', { name: /View year in detail/ }).click();
+    await expect(page).toHaveURL(/\/admin\/year\/\d{4}$/);
+  });
+});
+
+test.describe('Admin nav', () => {
+  test('has no sign-out control — real sign-out only happens via credential expiration', async ({
+    page,
+  }) => {
+    await page.goto('/admin/dashboard');
+    await expect(page.getByRole('link', { name: /sign out/i })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: /sign out/i })).toHaveCount(0);
+  });
 });
 
 test.describe('Admin month view (/admin/month/:yyyyMm)', () => {
