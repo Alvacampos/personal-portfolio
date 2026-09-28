@@ -1,11 +1,11 @@
 {
-  "fetchTime": "2026-09-27T00:14:53.797Z",
+  "fetchTime": "2026-09-28T18:07:21.964Z",
   "requestedUrl": "https://gonzalo-alvarez-campos-cv.com/skills/1",
   "finalUrl": "https://gonzalo-alvarez-campos-cv.com/skills/1",
   "lighthouseVersion": "13.4.1",
-  "commit": "68e4507",
+  "commit": "962a7c7",
   "categories": {
-    "performance": 0.92,
+    "performance": 0.9,
     "accessibility": 1,
     "best-practices": 1,
     "seo": 1
@@ -13,35 +13,35 @@
   "metrics": {
     "fcp": {
       "displayValue": "2.5 s",
-      "numericValue": 2519.3106000000002,
+      "numericValue": 2517.4958,
       "score": 0.66
     },
     "lcp": {
-      "displayValue": "2.9 s",
-      "numericValue": 2886.4658999999992,
-      "score": 0.81
+      "displayValue": "3.2 s",
+      "numericValue": 3167.6155499999995,
+      "score": 0.73
     },
     "si": {
       "displayValue": "2.5 s",
-      "numericValue": 2519.3106000000002,
+      "numericValue": 2517.4958,
       "score": 0.98
     },
     "tbt": {
       "displayValue": "10 ms",
-      "numericValue": 6.5,
+      "numericValue": 12,
       "score": 1
     },
     "cls": {
-      "displayValue": "0.001",
-      "numericValue": 0.0006151654099647578,
+      "displayValue": "0",
+      "numericValue": 0,
       "score": 1
     },
     "tti": {
-      "displayValue": "3.0 s",
-      "numericValue": 3011.1159000000007,
-      "score": 0.96
+      "displayValue": "3.2 s",
+      "numericValue": 3169.4779449999996,
+      "score": 0.95
     },
-    "ttfb": 25
+    "ttfb": 31
   },
   "failingAudits": [
     {
@@ -52,7 +52,7 @@
     {
       "id": "largest-contentful-paint",
       "title": "Largest Contentful Paint",
-      "score": 0.81
+      "score": 0.73
     },
     {
       "id": "speed-index",
@@ -60,9 +60,14 @@
       "score": 0.98
     },
     {
+      "id": "max-potential-fid",
+      "title": "Max Potential First Input Delay",
+      "score": 0.99
+    },
+    {
       "id": "interactive",
       "title": "Time to Interactive",
-      "score": 0.96
+      "score": 0.95
     },
     {
       "id": "unused-javascript",
