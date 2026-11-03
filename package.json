@@ -50,7 +50,7 @@
     "react-vertical-timeline-component": "^4.0.0",
     "recharts": "^3.10.1",
     "svgo": "^4.1.0",
-    "zod": "^4.4.3"
+    "zod": "^4.6.6"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.12.1",
